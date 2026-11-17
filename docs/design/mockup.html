@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FreeMyMacOS mockup</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{
+  --bg:#0B0D12; --surface:rgba(255,255,255,.04); --hover:rgba(255,255,255,.07); --stroke:rgba(255,255,255,.08);
+  --t1:rgba(255,255,255,.92); --t2:rgba(255,255,255,.55); --t3:rgba(255,255,255,.32);
+  --a1:#5EF2C4; --a2:#3AA8FF; --warn:#FFB454;
+  --round: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --spring: cubic-bezier(.22,1.2,.36,1);
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  background:#16181d;font-family:var(--sans);color:var(--t1);padding:24px 16px}
+.stage{width:100%;display:flex;justify-content:center}
+.win{width:880px;height:560px;flex:none;border-radius:14px;position:relative;overflow:hidden;
+  background:radial-gradient(520px 420px at 170px 200px, rgba(94,242,196,.10), transparent 70%), var(--bg);
+  box-shadow:0 0 0 1px rgba(255,255,255,.10), 0 30px 80px rgba(0,0,0,.55);
+  display:grid;grid-template-columns:340px 1fr;grid-template-rows:1fr 56px}
+.lights{position:absolute;top:16px;left:16px;display:flex;gap:8px}
+.lights i{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.14)}
+.hero{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 40px 0}
+.ring{position:relative;width:220px;height:220px}
+.ring svg{width:220px;height:220px;transform:rotate(-90deg)}
+.ring .track{stroke:var(--stroke)}
+.ring .arc{stroke:url(#g);stroke-linecap:round;transition:stroke-dashoffset .9s var(--spring)}
+.win.scanning .ring svg{animation:spin 2.4s linear infinite}
+@keyframes spin{to{transform:rotate(270deg)}}
+.center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.num{font-family:var(--round);font-size:64px;font-weight:600;letter-spacing:-1.5px;line-height:1;font-variant-numeric:tabular-nums}
+.unit{margin-top:8px;font-size:13px;color:var(--t2)}
+.check{font-size:56px;background:linear-gradient(135deg,var(--a1),var(--a2));-webkit-background-clip:text;background-clip:text;color:transparent;display:none}
+.win.done .check{display:block}.win.done .num{display:none}
+.primary{margin-top:34px;width:100%;height:48px;border:0;border-radius:14px;cursor:pointer;
+  background:linear-gradient(90deg,var(--a1),var(--a2));color:#06231c;font:600 15px var(--round);
+  transition:transform .25s var(--spring),opacity .25s}
+.primary:hover{transform:scale(1.015)}.primary:active{transform:scale(.98)}
+.primary:disabled{opacity:.35;cursor:default;transform:none}
+.ghost{margin-top:12px;background:none;border:0;color:var(--t2);font:13px var(--sans);cursor:pointer;padding:6px 10px;border-radius:8px}
+.ghost:hover{color:var(--t1);background:var(--hover)}
+.list{padding:44px 20px 8px 8px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.chev{font-size:13px!important;color:var(--t3)!important;width:auto!important;transition:transform .3s var(--spring)}
+.item.open .chev{transform:rotate(90deg)}
+.item.open .row{background:var(--surface)}
+.det{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s var(--spring)}
+.item.open .det{grid-template-rows:1fr}
+.det>div{overflow:hidden;min-height:0}
+.det .why{font-size:12px;line-height:1.5;color:var(--t2);padding:8px 12px 6px 42px}
+.det .f{display:flex;gap:12px;font-size:12px;height:24px;align-items:center;padding:0 42px 0 42px;color:var(--t2)}
+.det .f span:first-child{flex:1;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--t1)}
+.det .f span:last-child{font-family:var(--round);font-variant-numeric:tabular-nums}
+.det .more{display:flex;justify-content:space-between;font-size:12px;color:var(--t3);padding:4px 42px 10px 42px}
+.det .more a{color:var(--t2);cursor:pointer}.det .more a:hover{color:var(--t1)}
+.group{font-size:11px;font-weight:500;letter-spacing:.6px;text-transform:uppercase;color:var(--t3);padding:10px 12px 4px}
+.row{height:38px;display:flex;align-items:center;gap:12px;padding:0 12px;border-radius:10px;cursor:pointer;font-size:13px;transition:background .15s}
+.row:hover{background:var(--hover)}
+.row .ti{font-size:17px;color:var(--t2);width:18px;text-align:center}
+.row .name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .size{font-variant-numeric:tabular-nums;color:var(--t2);font-family:var(--round);transition:opacity .4s}
+.row .care{font-size:11px;color:var(--warn)}
+.row .grant{font-size:12px;color:var(--warn)}
+.dot{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--t3);display:flex;align-items:center;justify-content:center;transition:all .25s var(--spring)}
+.row.on .dot{border-color:transparent;background:linear-gradient(135deg,var(--a1),var(--a2))}
+.dot .ti{font-size:12px;color:#06231c;width:auto;opacity:0}
+.row.on .dot .ti{opacity:1}
+.row.locked{cursor:default}.row.locked .dot{opacity:.25}
+.win.scanning .row .size{opacity:.15}
+.mem{grid-column:1/3;border-top:1px solid var(--stroke);display:flex;align-items:center;gap:16px;padding:0 24px;font-size:12px;color:var(--t2)}
+.bar{flex:1;height:4px;border-radius:2px;background:var(--stroke);overflow:hidden}
+.bar b{display:block;height:100%;width:70%;border-radius:2px;background:rgba(255,255,255,.45);transition:width .8s var(--spring)}
+.mem button{background:var(--surface);border:1px solid var(--stroke);color:var(--t1);height:28px;padding:0 12px;border-radius:8px;font:12px var(--sans);cursor:pointer}
+.mem button:hover{background:var(--hover)}
+.states{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.states button{background:transparent;border:1px solid rgba(255,255,255,.14);color:var(--t2);height:30px;padding:0 14px;border-radius:15px;font:12px var(--sans);cursor:pointer}
+.states button.cur{color:var(--t1);border-color:rgba(255,255,255,.4)}
+@media (prefers-reduced-motion:reduce){.win.scanning .ring svg{animation:none}*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="stage">
+<div class="win ready" id="win">
+  <div class="lights"><i></i><i></i><i></i></div>
+  <section class="hero">
+    <div class="ring">
+      <svg viewBox="0 0 220 220" fill="none">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5EF2C4"/><stop offset="1" stop-color="#3AA8FF"/></linearGradient></defs>
+        <circle class="track" cx="110" cy="110" r="100" stroke-width="8"/>
+        <circle class="arc" id="arc" cx="110" cy="110" r="100" stroke-width="8" stroke-dasharray="628.3" stroke-dashoffset="628.3"/>
+      </svg>
+      <div class="center">
+        <div class="num" id="num">0</div>
+        <i class="ti ti-check check" aria-hidden="true"></i>
+        <div class="unit" id="unit">GB can go</div>
+      </div>
+    </div>
+    <button class="primary" id="clean">Clean</button>
+    <button class="ghost" id="rescan">Rescan</button>
+  </section>
+  <section class="list" id="list"></section>
+  <footer class="mem">
+    <span>Memory</span>
+    <div class="bar"><b id="membar"></b></div>
+    <span id="memtxt">11.2 of 16 GB</span>
+    <button id="ram">Free RAM</button>
+  </footer>
+</div>
+</div>
+<div class="states" id="states">
+  <button data-s="scanning">Scanning</button><button data-s="ready" class="cur">Ready</button>
+  <button data-s="cleaning">Cleaning</button><button data-s="done">Done</button>
+</div>
+<script>
+const DISK = 494;
+const items = [
+ ['Developer'],
+ ['xcode','ti-hammer','Xcode DerivedData',8.1,1],
+ ['sim','ti-device-mobile','Simulator Caches',3.8,1],
+ ['dev','ti-cpu','iOS Device Support',12.2,0,'careful'],
+ ['node','ti-package','npm / Yarn / pnpm',2.3,1],
+ ['gradle','ti-stack-2','Gradle Caches',3.9,1],
+ ['brew','ti-bottle','Homebrew Downloads',1.4,1],
+ ['Browsers'],
+ ['browser','ti-world','Browser Caches',0.9,1],
+ ['System'],
+ ['caches','ti-apps','App Caches',2.6,1],
+ ['logs','ti-file-text','User Logs',0.3,1],
+ ['trash','ti-trash','Trash',0,0,'locked']
+];
+const win = document.getElementById('win'), list = document.getElementById('list'), num = document.getElementById('num'),
+      unit = document.getElementById('unit'), arc = document.getElementById('arc'), clean = document.getElementById('clean');
+let shown = 0, raf;
+const info = {
+ xcode:['Build products and indexes. Xcode rebuilds them the next time you open a project.',[['SampleApp-gkxmzlq',3.4],['DemoKit-bdtwqa',2.1],['Notes-fhsnpe',1.5],['ModuleCache.noindex',0.8],['Playground-aqwzrt',0.2]],4],
+ sim:['Shared caches for the iOS Simulator. Recreated when a simulator boots.',[['dyld',3.1],['IDS',0.5],['com.apple.CoreSimulator.SimRuntime',0.2]],0],
+ dev:['Debug symbols for iOS versions you plugged in. Xcode downloads them again when that device connects, which can take a few minutes.',[['iPhone17,1 27.1 (24B83)',4.3],['iPhone17,1 27.0 (24A335)',4.1],['iPhone15,3 26.4 (23E246)',3.8]],0],
+ node:['Downloaded packages. Your projects keep their node_modules; installs fetch again when needed.',[['~/.npm/_cacache',1.6],['~/Library/Caches/Yarn',0.5],['~/Library/pnpm/store',0.2]],0],
+ gradle:['Downloaded dependencies and build caches. The next Android build fetches them again.',[['modules-2',2.7],['transforms-4',0.8],['jars-9',0.3],['8.11',0.1]],3],
+ brew:['Installers Homebrew already used. Installed tools are not touched.',[['node--23.2.0.arm64.bottle.tar.gz',0.5],['python@3.13--3.13.0.bottle.tar.gz',0.4],['ffmpeg--7.1.bottle.tar.gz',0.3]],12],
+ browser:['Cached pages and images. Passwords, history and logins stay.',[['Google/Chrome',0.6],['com.apple.Safari',0.2],['Firefox',0.1]],0],
+ caches:['Temporary files apps keep to start faster. Apps rebuild them as needed.',[['com.spotify.client',0.9],['com.figma.Desktop',0.6],['com.microsoft.VSCode',0.5],['com.tinyspeck.slackmacgap',0.3],['us.zoom.xos',0.2]],31],
+ logs:['Old diagnostic logs from your apps.',[['DiagnosticReports',0.2],['CoreSimulator',0.1]],9]
+};
+function detail(id) {
+  if (id === 'trash') return `<div class="why">FreeMyMacOS needs Full Disk Access to read the Trash. Nothing is requested until you choose to.</div><div class="more"><span></span><a>Open Privacy settings</a></div>`;
+  const [why, files, more] = info[id];
+  return `<div class="why">${why}</div>` + files.map(f => `<div class="f"><span>${f[0]}</span><span>${f[1].toFixed(1)} GB</span></div>`).join('') +
+    `<div class="more"><span>${more ? 'and ' + more + ' more' : ''}</span><a>Show in Finder</a></div>`;
+}
+list.innerHTML = items.map(i => i.length === 1 ? `<div class="group">${i[0]}</div>` :
+ `<div class="item"><div class="row ${i[4] ? 'on' : ''} ${i[5] === 'locked' ? 'locked' : ''}" data-id="${i[0]}" data-gb="${i[3]}">
+   <i class="ti ${i[1]}" aria-hidden="true"></i><span class="name">${i[2]} <i class="ti ti-chevron-right chev" aria-hidden="true"></i></span>
+   ${i[5] === 'careful' ? '<span class="care">Review first</span>' : ''}
+   ${i[5] === 'locked' ? '<span class="grant">Grant access</span>' : `<span class="size">${i[3].toFixed(1)} GB</span>`}
+   <span class="dot"><i class="ti ti-check" aria-hidden="true"></i></span></div>
+   <div class="det"><div>${detail(i[0])}</div></div></div>`).join('');
+const selected = () => [...list.querySelectorAll('.row.on')].reduce((s, r) => s + parseFloat(r.dataset.gb), 0);
+function tween(to, ms) {
+  cancelAnimationFrame(raf); const from = shown, t0 = performance.now();
+  const step = t => { const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+    shown = from + (to - from) * e; num.textContent = shown.toFixed(1); if (k < 1) raf = requestAnimationFrame(step); };
+  raf = requestAnimationFrame(step);
+}
+function ring(gb) { const f = gb <= 0 ? 0 : Math.max(gb / DISK, 4 / 360); arc.style.strokeDashoffset = (628.3 * (1 - f)).toFixed(1); }
+function set(state) {
+  win.className = 'win ' + state;
+  document.querySelectorAll('#states button').forEach(b => b.classList.toggle('cur', b.dataset.s === state));
+  const gb = selected();
+  if (state === 'scanning') { ring(60); tween(gb * .4, 1200); unit.textContent = 'Looking around'; clean.textContent = 'Scanning'; clean.disabled = true; }
+  if (state === 'ready') { ring(gb); tween(gb, 600); unit.textContent = 'GB can go'; clean.textContent = gb > 0 ? `Clean ${gb.toFixed(1)} GB` : 'Nothing selected'; clean.disabled = gb <= 0; }
+  if (state === 'cleaning') { ring(0); tween(0, 1500); unit.textContent = 'Clearing'; clean.textContent = 'Cleaning'; clean.disabled = true; }
+  if (state === 'done') { ring(0); unit.textContent = `Freed ${gb.toFixed(1)} GB`; clean.textContent = 'Done'; clean.disabled = true; }
+}
+list.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return;
+  if (e.target.closest('.dot')) { if (r.classList.contains('locked') || !win.classList.contains('ready')) return; r.classList.toggle('on'); set('ready'); return; }
+  const it = r.parentElement, was = it.classList.contains('open');
+  list.querySelectorAll('.item.open').forEach(o => o.classList.remove('open'));
+  if (!was) { it.classList.add('open'); setTimeout(() => it.scrollIntoView({block:'nearest', behavior:'smooth'}), 360); } });
+clean.addEventListener('click', () => { set('cleaning'); setTimeout(() => set('done'), 1700); });
+document.getElementById('rescan').addEventListener('click', () => { set('scanning'); setTimeout(() => set('ready'), 1600); });
+document.getElementById('states').addEventListener('click', e => { if (e.target.dataset.s) set(e.target.dataset.s); });
+document.getElementById('ram').addEventListener('click', () => { document.getElementById('membar').style.width = '52%'; document.getElementById('memtxt').textContent = '8.3 of 16 GB'; });
+function fit() { win.style.zoom = Math.min(1, (window.innerWidth - 32) / 880); }
+window.addEventListener('resize', fit); fit();
+shown = selected(); set('ready');
+list.querySelector('.item').classList.add('open');
+</script>
+</body>
+</html>
