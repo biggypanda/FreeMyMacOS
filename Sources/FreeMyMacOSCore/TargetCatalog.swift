@@ -17,7 +17,7 @@ public enum TargetCatalog {
             guards: [AppGuard] = []
         ) -> CleanTarget {
             CleanTarget(
-                id: id, title: title, detail: detail, symbol: symbol,
+                id: id, title: CoreText.catalog(title), detail: CoreText.catalog(detail), symbol: symbol,
                 group: group, tier: tier, roots: relativeRoots.map(root), appGuards: guards
             )
         }
@@ -147,8 +147,8 @@ public enum TargetCatalog {
         let cachesRoot = root(userCachesPath)
         let userCaches = CleanTarget(
             id: "user.caches",
-            title: "App Caches",
-            detail: "Temporary files apps keep to load faster, which they recreate as they need them.",
+            title: CoreText.catalog("App Caches"),
+            detail: CoreText.catalog("Temporary files apps keep to load faster, which they recreate as they need them."),
             symbol: "internaldrive",
             group: .system,
             tier: .safe,

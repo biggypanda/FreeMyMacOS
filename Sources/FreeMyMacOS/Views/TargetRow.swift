@@ -115,7 +115,7 @@ struct TargetRow: View {
             if isExpanded { onToggleExpanded() }
             return .handled
         }
-        .accessibilityAction(named: isExpanded ? "Hide details" : "Show details", onToggleExpanded)
+        .accessibilityAction(named: isExpanded ? Text("Hide details") : Text("Show details"), onToggleExpanded)
     }
 
     @ViewBuilder
@@ -226,8 +226,8 @@ private struct TargetDetail: View {
             .map { ($0.path as NSString).abbreviatingWithTildeInPath }
             .formatted(.list(type: .and))
         return denied.count == 1
-            ? "\(names) needs Full Disk Access, so it is not counted."
-            : "\(names) need Full Disk Access, so they are not counted."
+            ? String(localized: "\(names) needs Full Disk Access, so it is not counted.")
+            : String(localized: "\(names) need Full Disk Access, so they are not counted.")
     }
 
     private var remainingCount: Int? {
@@ -267,7 +267,7 @@ private struct SelectionMark: View {
 
 /// Small text button that brightens on hover.
 struct TextLink: View {
-    let title: String
+    let title: LocalizedStringKey
     let color: Color
     let action: () -> Void
     @State private var isHovered = false

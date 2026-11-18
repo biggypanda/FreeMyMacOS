@@ -100,15 +100,15 @@ struct MemoryStrip: View {
     }
 
     private var purgeButtonTitle: String {
-        if isPurging { return "Freeing…" }
-        return purgeNote.map(noteText) ?? "Free RAM"
+        if isPurging { return String(localized: "Freeing…") }
+        return purgeNote.map(noteText) ?? String(localized: "Free RAM")
     }
 
     private func noteText(_ result: PurgeResult) -> String {
         switch result {
-        case .freed: "Memory freed"
-        case .cancelled: "Cancelled"
-        case .failed: "Couldn't free memory"
+        case .freed: String(localized: "Memory freed")
+        case .cancelled: String(localized: "Cancelled")
+        case .failed: String(localized: "Couldn't free memory")
         }
     }
 
@@ -132,12 +132,19 @@ struct MemoryStrip: View {
 
     /// "11.2 of 16 GB": memory is counted in binary units, like Activity Monitor and About This Mac.
     private var usageText: String {
-        guard let stats else { return "Unavailable" }
+        guard let stats else { return String(localized: "Unavailable") }
+        return MemoryText.usage(used: stats.used, total: stats.total)
+    }
+}
+
+enum MemoryText {
+    /// "11.2 of 16 GB" ("11,2 / 16 GB" in Turkish): binary units, like Activity Monitor.
+    static func usage(used: Int64, total: Int64, locale: Locale = .current) -> String {
         let gib = Double(1 << 30)
-        let style = FloatingPointFormatStyle<Double>.number.locale(Locale(identifier: "en_US"))
-        let used = (Double(stats.used) / gib).formatted(style.precision(.fractionLength(1)))
-        let total = (Double(stats.total) / gib).formatted(style.precision(.fractionLength(0)))
-        return "\(used) of \(total) GB"
+        let style = FloatingPointFormatStyle<Double>.number.locale(locale)
+        let usedText = (Double(used) / gib).formatted(style.precision(.fractionLength(1)))
+        let totalText = (Double(total) / gib).formatted(style.precision(.fractionLength(0)))
+        return String(localized: "\(usedText) of \(totalText) GB", locale: locale)
     }
 }
 

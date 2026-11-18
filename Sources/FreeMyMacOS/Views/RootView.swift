@@ -65,7 +65,7 @@ struct RootView: View {
             .filter { $0.tier == .careful && model.selection.contains($0.id) && model.results[$0.id]?.status == .ok }
             .map(\.title)
             .formatted(.list(type: .and))
-        return "\(names) will be removed for good. This can't be undone."
+        return String(localized: "\(names) will be removed for good. This can't be undone.")
     }
 
     private func requestClean() {

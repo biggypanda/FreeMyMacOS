@@ -12,6 +12,7 @@ let package = Package(
         .target(name: "FreeMyMacOSCore"),
         .executableTarget(name: "FreeMyMacOS", dependencies: ["FreeMyMacOSCore"]),
         .testTarget(name: "FreeMyMacOSCoreTests", dependencies: ["FreeMyMacOSCore"]),
+        .testTarget(name: "FreeMyMacOSTests", dependencies: ["FreeMyMacOS", "FreeMyMacOSCore"]),
     ],
     swiftLanguageModes: [.v6]
 )

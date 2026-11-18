@@ -69,7 +69,7 @@ struct HeroPanel: View {
 
     private func lastCleanText(_ record: CleanRecord) -> String {
         let when = record.date.formatted(.relative(presentation: .named))
-        return "Last cleaned \(when) · \(ByteFormat.string(record.freedBytes))"
+        return String(localized: "Last cleaned \(when) · \(ByteFormat.string(record.freedBytes))")
     }
 
     // MARK: - Failures
@@ -88,10 +88,7 @@ struct HeroPanel: View {
         }
     }
 
-    private var failuresText: String {
-        let count = model.failures.count
-        return count == 1 ? "1 item couldn't be removed" : "\(count) items couldn't be removed"
-    }
+    private var failuresText: String { FailureText.count(model.failures.count) }
 
     // MARK: - Center
 
@@ -102,7 +99,9 @@ struct HeroPanel: View {
                 Image(systemName: "checkmark")
                     .font(Theme.heroCheck)
                     .foregroundStyle(Theme.textPrimary)
-                Text("\(model.isDryRun ? "Would free" : "Freed") \(ByteFormat.string(freed))")
+                Text(model.isDryRun
+                     ? String(localized: "Would free \(ByteFormat.string(freed))")
+                     : String(localized: "Freed \(ByteFormat.string(freed))"))
                     .font(Theme.heroUnit)
                     .foregroundStyle(Theme.textSecondary)
             }
@@ -157,9 +156,11 @@ struct HeroPanel: View {
     private var unitText: String {
         let unit = ByteParts(bytes: liveBytes).unit
         switch model.phase {
-        case .idle, .scanning: return unit.map { "\($0) found so far" } ?? "Looking around"
-        case .cleaning: return "Clearing"
-        case .ready, .done: return unit.map { "\($0) can go" } ?? "Nothing selected"
+        case .idle, .scanning:
+            return unit.map { String(localized: "\($0) found so far") } ?? String(localized: "Looking around")
+        case .cleaning: return String(localized: "Clearing")
+        case .ready, .done:
+            return unit.map { String(localized: "\($0) can go") } ?? String(localized: "Nothing selected")
         }
     }
 
@@ -190,10 +191,12 @@ struct HeroPanel: View {
 
     private var buttonTitle: String {
         switch model.phase {
-        case .idle, .scanning: "Scanning"
-        case .cleaning: "Cleaning"
-        case .done: "Done"
-        case .ready: model.selectedBytes > 0 ? "Clean \(ByteFormat.string(model.selectedBytes))" : "Clean"
+        case .idle, .scanning: String(localized: "Scanning")
+        case .cleaning: String(localized: "Cleaning")
+        case .done: String(localized: "Done")
+        case .ready: model.selectedBytes > 0
+            ? String(localized: "Clean \(ByteFormat.string(model.selectedBytes))")
+            : String(localized: "Clean")
         }
     }
 
@@ -314,7 +317,7 @@ private struct CleanHistoryPopover: View {
 
     private func freedText(_ record: CleanRecord) -> String {
         record.isDryRun
-            ? "Would free \(ByteFormat.string(record.freedBytes))"
+            ? String(localized: "Would free \(ByteFormat.string(record.freedBytes))")
             : ByteFormat.string(record.freedBytes)
     }
 
@@ -322,9 +325,7 @@ private struct CleanHistoryPopover: View {
         let titles = record.targetIDs.compactMap { id in targets.first { $0.id == id }?.title }
         var text = titles.formatted(.list(type: .and))
         if record.failureCount > 0 {
-            text += record.failureCount == 1
-                ? " · 1 item couldn't be removed"
-                : " · \(record.failureCount) items couldn't be removed"
+            text += " · " + FailureText.count(record.failureCount)
         }
         return text
     }
@@ -413,6 +414,15 @@ struct HeroRing: View {
     }
 }
 
+/// What a clean could not remove, counted: "1 item couldn't be removed".
+enum FailureText {
+    static func count(_ count: Int) -> String {
+        count == 1
+            ? String(localized: "1 item couldn't be removed")
+            : String(localized: "\(count) items couldn't be removed")
+    }
+}
+
 /// A byte count split for the hero: "23.94" over "GB can go".
 struct ByteParts: Equatable {
     let number: Double
@@ -420,33 +430,27 @@ struct ByteParts: Equatable {
     /// nil for zero bytes.
     let unit: String?
     let decimals: Int
+    let locale: Locale
 
-    init(bytes: Int64) {
+    init(bytes: Int64, locale: Locale = .current) {
+        self.locale = locale
         guard bytes > 0 else {
-            self.init(number: 0, text: "0", unit: nil, decimals: 0)
+            number = 0
+            text = 0.formatted(.number.locale(locale))
+            unit = nil
+            decimals = 0
             return
         }
-        let parts = ByteFormat.string(bytes).split(separator: " ", maxSplits: 1).map(String.init)
-        let text = parts.first ?? "0"
-        let decimals = text.split(separator: ".").dropFirst().first?.count ?? 0
-        self.init(
-            number: Double(text.replacingOccurrences(of: ",", with: "")) ?? 0,
-            text: text,
-            unit: parts.count > 1 ? parts[1] : nil,
-            decimals: decimals
-        )
-    }
-
-    private init(number: Double, text: String, unit: String?, decimals: Int) {
-        self.number = number
-        self.text = text
-        self.unit = unit
-        self.decimals = decimals
+        let parts = ByteFormat.parts(bytes, locale: locale)
+        number = parts.number
+        text = parts.text
+        unit = parts.unit.isEmpty ? nil : parts.unit
+        decimals = parts.decimals
     }
 
     /// `value` with the same number of decimals as this one.
     func formatted(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(decimals)).locale(Locale(identifier: "en_US")))
+        value.formatted(.number.precision(.fractionLength(decimals)).locale(locale))
     }
 }
 

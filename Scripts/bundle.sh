@@ -31,6 +31,10 @@ mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin_dir/FreeMyMacOS" "$app/Contents/MacOS/FreeMyMacOS"
 cp "$root/Support/Info.plist" "$app/Contents/Info.plist"
 cp "$root/Support/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
+# Translations go in the main bundle, where SwiftUI and String(localized:) look by default.
+for lproj in "$root"/Support/Localization/*.lproj; do
+  cp -R "$lproj" "$app/Contents/Resources/"
+done
 printf 'APPL????' > "$app/Contents/PkgInfo"
 
 sign_flags=(--force --options runtime --entitlements "$root/Support/FreeMyMacOS.entitlements")

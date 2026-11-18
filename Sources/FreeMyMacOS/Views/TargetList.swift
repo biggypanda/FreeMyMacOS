@@ -78,10 +78,10 @@ struct TargetList: View {
 
     private func title(of group: CleanGroup) -> String {
         switch group {
-        case .developer: "Developer"
-        case .browsers: "Browsers"
-        case .apps: "Apps"
-        case .system: "System"
+        case .developer: String(localized: "Developer")
+        case .browsers: String(localized: "Browsers")
+        case .apps: String(localized: "Apps")
+        case .system: String(localized: "System")
         }
     }
 
