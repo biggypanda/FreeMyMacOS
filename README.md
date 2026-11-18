@@ -24,8 +24,11 @@ Download it from [freemymacos.com](https://freemymacos.com), or get `FreeMyMacOS
 With Homebrew:
 
 ```sh
+brew trust biggypanda/tap
 brew install --cask biggypanda/tap/freemymacos
 ```
+
+(Homebrew asks you to trust a third-party tap once before installing from it.)
 
 Only download it from freemymacos.com, this repository or the Homebrew tap above.
 

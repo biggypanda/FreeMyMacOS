@@ -1,7 +1,7 @@
 # Homebrew tap
 
 `freemymacos.rb` is the cask for the personal tap at `biggypanda/homebrew-tap`
-(installed with `brew install --cask biggypanda/tap/freemymacos`).
+(installed with `brew trust biggypanda/tap` once, then `brew install --cask biggypanda/tap/freemymacos`).
 
 For each release:
 
