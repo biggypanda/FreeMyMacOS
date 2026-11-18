@@ -12,13 +12,20 @@ public struct ScanResult: Sendable, Equatable {
     public let status: ScanStatus
     /// Direct children, largest first, at most 5.
     public let topItems: [ScanItem]
+    /// Roots that exist but could not be listed (usually missing Full Disk Access).
+    /// Non-empty with status `.ok` means the row is only partly readable.
+    public let deniedRoots: [URL]
 
-    public init(targetID: String, bytes: Int64, itemCount: Int, status: ScanStatus, topItems: [ScanItem]) {
+    public init(
+        targetID: String, bytes: Int64, itemCount: Int, status: ScanStatus,
+        topItems: [ScanItem], deniedRoots: [URL] = []
+    ) {
         self.targetID = targetID
         self.bytes = bytes
         self.itemCount = itemCount
         self.status = status
         self.topItems = topItems
+        self.deniedRoots = deniedRoots
     }
 }
 
@@ -58,7 +65,7 @@ public struct DiskScanner: Scanning {
         let multiRoot = target.roots.count > 1
         var items: [ScanItem] = []
         var existingRoots = 0
-        var deniedRoots = 0
+        var deniedRoots: [URL] = []
 
         for root in target.roots {
             if Task.isCancelled { break }
@@ -68,7 +75,7 @@ public struct DiskScanner: Scanning {
                 continue
             case .denied:
                 existingRoots += 1
-                deniedRoots += 1
+                deniedRoots.append(root)
                 continue
             case .items(let urls):
                 existingRoots += 1
@@ -88,7 +95,7 @@ public struct DiskScanner: Scanning {
         let status: ScanStatus
         if existingRoots == 0 {
             status = .missing
-        } else if deniedRoots > 0 && bytes == 0 {
+        } else if !deniedRoots.isEmpty && bytes == 0 {
             status = .permissionDenied
         } else {
             status = .ok
@@ -98,7 +105,7 @@ public struct DiskScanner: Scanning {
             .prefix(5)
         return ScanResult(
             targetID: target.id, bytes: bytes, itemCount: items.count,
-            status: status, topItems: Array(top)
+            status: status, topItems: Array(top), deniedRoots: deniedRoots
         )
     }
 

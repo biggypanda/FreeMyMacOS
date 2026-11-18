@@ -1,7 +1,29 @@
 import Foundation
 
 public enum CleanGroup: String, Sendable, CaseIterable {
-    case developer, browsers, system
+    case developer, browsers, apps, system
+}
+
+/// An app whose data folder must not be cleaned while it runs: it holds its caches open
+/// and may write them back or break. Roots inside `folder` are skipped while any of
+/// `bundleIDs` is running.
+public struct AppGuard: Sendable, Hashable {
+    public let appName: String
+    public let bundleIDs: [String]
+    public let folder: URL
+
+    public init(appName: String, bundleIDs: [String], folder: URL) {
+        self.appName = appName
+        self.bundleIDs = bundleIDs
+        self.folder = folder.standardizedFileURL
+    }
+
+    /// True when `url` is `folder` or inside it, compared by whole path components.
+    func covers(_ url: URL) -> Bool {
+        let base = folder.pathComponents
+        let components = url.standardizedFileURL.pathComponents
+        return components.count >= base.count && Array(components.prefix(base.count)) == base
+    }
 }
 
 public enum CleanTier: Sendable {
@@ -24,6 +46,8 @@ public struct CleanTarget: Identifiable, Sendable, Hashable {
     public let excludedNames: Set<String>
     /// Direct children of a root whose name starts with one of these are never touched.
     public let excludedPrefixes: [String]
+    /// Apps that must be quit before roots inside their folder are cleaned.
+    public let appGuards: [AppGuard]
 
     public init(
         id: String,
@@ -34,7 +58,8 @@ public struct CleanTarget: Identifiable, Sendable, Hashable {
         tier: CleanTier,
         roots: [URL],
         excludedNames: Set<String> = [],
-        excludedPrefixes: [String] = []
+        excludedPrefixes: [String] = [],
+        appGuards: [AppGuard] = []
     ) {
         self.id = id
         self.title = title
@@ -45,5 +70,13 @@ public struct CleanTarget: Identifiable, Sendable, Hashable {
         self.roots = roots
         self.excludedNames = excludedNames
         self.excludedPrefixes = excludedPrefixes
+        self.appGuards = appGuards
+    }
+
+    /// The guard that blocks `root` right now, if any: one covering it whose app is running.
+    func appGuard(for root: URL, running: Set<String>) -> AppGuard? {
+        appGuards.first { guardItem in
+            guardItem.covers(root) && guardItem.bundleIDs.contains(where: running.contains)
+        }
     }
 }

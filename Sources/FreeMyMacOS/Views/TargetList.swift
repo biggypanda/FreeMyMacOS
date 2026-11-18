@@ -80,6 +80,7 @@ struct TargetList: View {
         switch group {
         case .developer: "Developer"
         case .browsers: "Browsers"
+        case .apps: "Apps"
         case .system: "System"
         }
     }

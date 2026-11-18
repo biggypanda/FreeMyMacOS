@@ -185,6 +185,7 @@ private func target(
 
         #expect(result.status == .permissionDenied)
         #expect(result.bytes == 0)
+        #expect(result.deniedRoots == [root])
         #expect(throws: (any Error).self) { try target([root]).deletableItems() }
     }
 
@@ -203,6 +204,20 @@ private func target(
         #expect(result.status == .ok)
         #expect(result.bytes >= 100_000)
         #expect(result.itemCount == 1)
+        // The row stays usable, and the view can still ask for access to the locked root.
+        #expect(result.deniedRoots == [locked])
+    }
+
+    @Test func readableRootsReportNoDeniedRoots() async throws {
+        let tree = try FakeTree()
+        defer { tree.remove() }
+        let open = try tree.dir("open")
+        try tree.file("open/data.bin", bytes: 10_000)
+
+        let result = await DiskScanner().scan(target([open]))
+
+        #expect(result.status == .ok)
+        #expect(result.deniedRoots.isEmpty)
     }
 
     @Test func multiRootNamesAreHomeRelative() async throws {

@@ -260,8 +260,67 @@ private func children(of url: URL) throws -> [String] {
         let report = await Cleaner(guard: try fake.guardFor([denied, fake.pip]))
             .clean(target([denied, fake.pip]))
 
-        #expect(report.failures.map { canonical($0.path) } == [canonical(denied.path)])
+        // A root macOS will not let the app read was never offered, so it is skipped quietly.
+        #expect(report.failures.isEmpty)
         #expect(report.freedBytes > 0)
         #expect(try children(of: fake.pip).isEmpty)
+    }
+
+    @Test func runningAppSkipsItsRootsOnly() async throws {
+        let fake = try FakeHome()
+        defer { fake.remove() }
+        let appFolder = try fake.dir("Library/Application Support/Code")
+        let cache = try fake.dir("Library/Application Support/Code/Cache")
+        let kept = try fake.file("Library/Application Support/Code/Cache/a.bin", bytes: 10_000)
+        try fake.file("Library/Caches/pip/one.bin", bytes: 10_000)
+        let guarded = CleanTarget(
+            id: "test.guarded", title: "Test", detail: "Test target.", symbol: "folder",
+            group: .apps, tier: .safe, roots: [cache, fake.pip],
+            appGuards: [AppGuard(appName: "VS Code", bundleIDs: ["com.microsoft.VSCode"], folder: appFolder)]
+        )
+        let safety = try fake.guardFor([cache, fake.pip])
+
+        let blocked = await Cleaner(guard: safety, runningBundleIDs: { ["com.microsoft.VSCode"] })
+            .clean(guarded)
+
+        #expect(blocked.failures.map(\.reason) == ["Quit VS Code first"])
+        #expect(exists(kept))
+        #expect(try children(of: fake.pip).isEmpty)
+
+        let free = await Cleaner(guard: safety, runningBundleIDs: { ["com.other.app"] }).clean(guarded)
+
+        #expect(free.failures.isEmpty)
+        #expect(!exists(kept))
+        #expect(exists(cache))
+    }
+
+    @Test func partialRemovalCreditsOnlyRemovedFiles() async throws {
+        let fake = try FakeHome()
+        defer { fake.remove() }
+        let folder = fake.pip.appendingPathComponent("folder", isDirectory: true)
+        let a = try fake.file("a.bin", bytes: 20_000, in: folder)
+        let stuck = try fake.file("stuck.bin", bytes: 30_000, in: folder)
+        let c = try fake.file("sub/c.bin", bytes: 40_000, in: folder)
+        let expected = allocatedSize(of: a) + allocatedSize(of: c)
+        let secret = try fake.file("secret.bin", bytes: 10_000, in: fake.outside)
+
+        let cleaner = Cleaner(guard: try fake.guardFor([fake.pip])) { url in
+            if url.lastPathComponent == "stuck.bin" {
+                throw POSIXError(.EPERM)
+            }
+            var info = stat()
+            _ = lstat(url.path, &info)
+            let result = (info.st_mode & S_IFMT) == S_IFDIR ? rmdir(url.path) : unlink(url.path)
+            if result != 0 { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+        }
+        let report = await cleaner.clean(target([fake.pip]))
+
+        #expect(report.freedBytes == expected)
+        #expect(report.failures.map(\.reason) == ["Permission denied"])
+        #expect(report.failures.map { canonical($0.path) } == [canonical(folder.path)])
+        #expect(exists(stuck))
+        #expect(!exists(a))
+        #expect(!exists(c))
+        #expect(exists(secret))
     }
 }
