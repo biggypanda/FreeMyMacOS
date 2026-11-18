@@ -13,12 +13,23 @@ public enum TargetCatalog {
 
         func make(
             _ id: String, _ title: String, _ detail: String, _ symbol: String,
-            _ group: CleanGroup, _ tier: CleanTier, _ relativeRoots: [String]
+            _ group: CleanGroup, _ tier: CleanTier, _ relativeRoots: [String],
+            guards: [AppGuard] = []
         ) -> CleanTarget {
             CleanTarget(
                 id: id, title: title, detail: detail, symbol: symbol,
-                group: group, tier: tier, roots: relativeRoots.map(root)
+                group: group, tier: tier, roots: relativeRoots.map(root), appGuards: guards
             )
+        }
+
+        func appGuard(_ name: String, _ bundleIDs: [String], _ folder: String) -> AppGuard {
+            AppGuard(appName: name, bundleIDs: bundleIDs, folder: root(folder))
+        }
+
+        let support = "Library/Application Support"
+        let electronCaches = ["CachedData", "CachedExtensionVSIXs", "Cache", "Code Cache", "GPUCache"]
+        let editorRoots = ["Code", "Cursor"].flatMap { app in
+            electronCaches.map { "\(support)/\(app)/\($0)" }
         }
 
         let before: [CleanTarget] = [
@@ -38,6 +49,10 @@ public enum TargetCatalog {
                  "App builds you archived for distribution, worth keeping only if you still need to symbolicate or resubmit them.",
                  "archivebox", .developer, .careful,
                  ["Library/Developer/Xcode/Archives"]),
+            make("xcode.previews", "Xcode Previews",
+                 "Builds Xcode made for SwiftUI previews; it rebuilds them, slowly, the next time a preview opens.",
+                 "rectangle.on.rectangle", .developer, .careful,
+                 ["Library/Developer/Xcode/UserData/Previews"]),
             make("swiftpm.cache", "SwiftPM Cache",
                  "Downloaded Swift package sources that SwiftPM fetches again when a project needs them.",
                  "shippingbox", .developer, .safe,
@@ -62,11 +77,60 @@ public enum TargetCatalog {
                  "Installer files Homebrew already used, which it downloads again only if it needs them.",
                  "mug", .developer, .safe,
                  ["Library/Caches/Homebrew"]),
+            make("cargo.registry", "Cargo Registry",
+                 "Downloaded Rust crates that Cargo fetches again when a project needs them.",
+                 "shippingbox.circle", .developer, .safe,
+                 [".cargo/registry/cache", ".cargo/registry/src"]),
+            make("bun.cache", "Bun Cache",
+                 "Package downloads Bun keeps, which it refills on the next install.",
+                 "hare", .developer, .safe,
+                 [".bun/install/cache"]),
+            make("uv.cache", "uv Cache",
+                 "Python packages the uv tool downloaded, which it fetches again when needed.",
+                 "bolt", .developer, .safe,
+                 [".cache/uv"]),
+            make("pub.cache", "Dart Pub Cache",
+                 "Downloaded Dart and Flutter packages; run pub get in a project to fetch them again.",
+                 "bird", .developer, .safe,
+                 [".pub-cache/hosted"]),
+            make("playwright.browsers", "Playwright Browsers",
+                 "Browser builds Playwright downloaded for tests; run npx playwright install to get them back.",
+                 "theatermasks", .developer, .careful,
+                 ["Library/Caches/ms-playwright"]),
+            make("puppeteer.browsers", "Puppeteer Browsers",
+                 "Browser builds Puppeteer downloaded for tests, fetched again on the next install.",
+                 "theatermask.and.paintbrush", .developer, .careful,
+                 [".cache/puppeteer"]),
+            make("maven.repository", "Maven Repository",
+                 "Downloaded Java libraries; anything you installed locally with mvn install exists only here.",
+                 "building.columns", .developer, .careful,
+                 [".m2/repository"]),
+            make("huggingface.hub", "Hugging Face Models",
+                 "Downloaded AI models, which can be very large and slow to download again.",
+                 "brain", .developer, .careful,
+                 [".cache/huggingface/hub"]),
+            make("editor.caches", "VS Code / Cursor Caches",
+                 "Caches the editors rebuild on their own. Quit the editor first; while it is open they are skipped.",
+                 "chevron.left.slash.chevron.right", .developer, .safe,
+                 editorRoots,
+                 guards: [
+                    appGuard("VS Code", ["com.microsoft.VSCode", "com.microsoft.VSCodeInsiders"], "\(support)/Code"),
+                    appGuard("Cursor", ["com.todesktop.230313mzl4w4u92"], "\(support)/Cursor"),
+                 ]),
             make("browser.caches", "Browser Caches",
                  "Saved copies of web pages and images that browsers download again as you browse.",
                  "globe", .browsers, .safe,
                  ["Library/Caches/Google/Chrome", "Library/Caches/com.apple.Safari",
                   "Library/Caches/Firefox", "Library/Caches/company.thebrowser.Browser"]),
+            make("chat.caches", "Slack / Discord Caches",
+                 "Cached images and files the chat apps download again. Quit the app first; while it is open they are skipped.",
+                 "bubble.left.and.bubble.right", .apps, .safe,
+                 ["\(support)/Slack/Cache", "\(support)/Slack/Service Worker/CacheStorage",
+                  "\(support)/discord/Cache", "\(support)/discord/Code Cache"],
+                 guards: [
+                    appGuard("Slack", ["com.tinyspeck.slackmacgap"], "\(support)/Slack"),
+                    appGuard("Discord", ["com.hnc.Discord"], "\(support)/discord"),
+                 ]),
         ]
 
         let after: [CleanTarget] = [
