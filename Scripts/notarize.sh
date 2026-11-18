@@ -22,14 +22,7 @@ SIGN_ID="$SIGN_ID" "$root/Scripts/bundle.sh" release
 
 app="$root/dist/FreeMyMacOS.app"
 dmg="$root/dist/FreeMyMacOS.dmg"
-staging="$(mktemp -d)"
-trap 'rm -rf "$staging"' EXIT
-
-cp -R "$app" "$staging/"
-ln -s /Applications "$staging/Applications"
-
-rm -f "$dmg"
-hdiutil create -volname "FreeMyMacOS" -srcfolder "$staging" -fs HFS+ -format UDZO -ov "$dmg"
+"$root/Scripts/make-dmg.sh" "$app" "$dmg"
 
 codesign --sign "$SIGN_ID" --timestamp --force "$dmg"
 codesign --verify --strict "$dmg"

@@ -128,7 +128,7 @@ Releases are signed with a Developer ID Application certificate and notarized by
    SIGN_ID="Developer ID Application: <Name> (<TEAMID>)" NOTARY_PROFILE=<profile> ./Scripts/notarize.sh
    ```
 
-   This produces a universal, signed `dist/FreeMyMacOS.app` and a notarized, stapled `dist/FreeMyMacOS.dmg`.
+   This produces a universal, signed `dist/FreeMyMacOS.app` and a notarized, stapled `dist/FreeMyMacOS.dmg`. The DMG window layout comes from `Scripts/make-dmg.sh` (Finder may ask once for permission to arrange the window).
 4. Attach `dist/FreeMyMacOS.dmg` to a release.
 
 ## License
