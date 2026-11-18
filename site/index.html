@@ -8,6 +8,9 @@
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0B0D12">
 <link rel="canonical" href="https://freemymacos.com/">
+<link rel="alternate" hreflang="en" href="https://freemymacos.com/">
+<link rel="alternate" hreflang="tr" href="https://freemymacos.com/?lang=tr">
+<link rel="alternate" hreflang="x-default" href="https://freemymacos.com/">
 <link rel="icon" type="image/png" href="assets/favicon-64.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta property="og:type" content="website">
@@ -16,6 +19,26 @@
 <meta property="og:description" content="Clear Xcode, npm, browser and app caches you can safely lose. Free, open source, no network access.">
 <meta property="og:image" content="https://freemymacos.com/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "FreeMyMacOS",
+  "description": "A free, open-source macOS app that clears developer and app caches you can safely lose, and shows what is using your memory.",
+  "url": "https://freemymacos.com/",
+  "image": "https://freemymacos.com/assets/og.png",
+  "screenshot": "https://freemymacos.com/assets/app.png",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "macOS 14 or later",
+  "softwareVersion": "1.0.1",
+  "downloadUrl": "https://github.com/biggypanda/FreeMyMacOS/releases/latest/download/FreeMyMacOS.dmg",
+  "license": "https://opensource.org/licenses/MIT",
+  "isAccessibleForFree": true,
+  "inLanguage": ["en", "tr", "de"],
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "codeRepository": "https://github.com/biggypanda/FreeMyMacOS"
+}
+</script>
 <style>
   :root {
     --bg: #0B0D12;
@@ -154,6 +177,8 @@
   .install img { border-radius: 14px; border: 1px solid rgba(255,255,255,.1); box-shadow: 0 30px 80px -20px rgba(0,0,0,.8); }
   .verify { margin-top: 28px; font-size: 13px; color: var(--text-3); }
   .verify code { font: 12px var(--mono); color: var(--text-2); overflow-wrap: anywhere; }
+  .verify + .verify { margin-top: 8px; }
+  .verify a { color: var(--text-2); }
   @media (max-width: 860px) { .install { grid-template-columns: 1fr; gap: 36px; } }
 
   /* FAQ */
@@ -244,13 +269,24 @@
         <div class="t"><div><div class="t-name">Simulator Caches</div><div class="t-path">~/Library/Developer/CoreSimulator/Caches</div></div><span class="tag">safe</span></div>
         <div class="t"><div><div class="t-name">iOS Device Support</div><div class="t-path">~/Library/Developer/Xcode/iOS DeviceSupport</div></div><span class="tag careful">careful</span></div>
         <div class="t"><div><div class="t-name">Xcode Archives</div><div class="t-path">~/Library/Developer/Xcode/Archives</div></div><span class="tag careful">careful</span></div>
+        <div class="t"><div><div class="t-name">Xcode Previews</div><div class="t-path">~/Library/Developer/Xcode/UserData/Previews</div></div><span class="tag careful">careful</span></div>
         <div class="t"><div><div class="t-name">SwiftPM Cache</div><div class="t-path">~/Library/Caches/org.swift.swiftpm</div></div><span class="tag">safe</span></div>
         <div class="t"><div><div class="t-name">npm / Yarn / pnpm</div><div class="t-path">~/.npm/_cacache, Yarn and pnpm stores</div></div><span class="tag">safe</span></div>
         <div class="t"><div><div class="t-name">pip Cache</div><div class="t-path">~/Library/Caches/pip</div></div><span class="tag">safe</span></div>
         <div class="t"><div><div class="t-name">CocoaPods Cache</div><div class="t-path">~/Library/Caches/CocoaPods</div></div><span class="tag">safe</span></div>
         <div class="t"><div><div class="t-name">Gradle Caches</div><div class="t-path">~/.gradle/caches</div></div><span class="tag">safe</span></div>
         <div class="t"><div><div class="t-name">Homebrew Downloads</div><div class="t-path">~/Library/Caches/Homebrew</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">Cargo Registry</div><div class="t-path">~/.cargo/registry</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">Bun Cache</div><div class="t-path">~/.bun/install/cache</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">uv Cache</div><div class="t-path">~/.cache/uv</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">Dart Pub Cache</div><div class="t-path">~/.pub-cache/hosted</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">Playwright Browsers</div><div class="t-path">~/Library/Caches/ms-playwright</div></div><span class="tag careful">careful</span></div>
+        <div class="t"><div><div class="t-name">Puppeteer Browsers</div><div class="t-path">~/.cache/puppeteer</div></div><span class="tag careful">careful</span></div>
+        <div class="t"><div><div class="t-name">Maven Repository</div><div class="t-path">~/.m2/repository</div></div><span class="tag careful">careful</span></div>
+        <div class="t"><div><div class="t-name">Hugging Face Models</div><div class="t-path">~/.cache/huggingface/hub</div></div><span class="tag careful">careful</span></div>
+        <div class="t"><div><div class="t-name">VS Code / Cursor Caches</div><div class="t-path">Editor caches, skipped while the editor is open</div></div><span class="tag">safe</span></div>
         <div class="t"><div><div class="t-name">Browser Caches</div><div class="t-path">Chrome, Safari, Firefox and Arc caches</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">Slack / Discord Caches</div><div class="t-path">Chat app caches, skipped while the app is open</div></div><span class="tag">safe</span></div>
         <div class="t"><div><div class="t-name">App Caches</div><div class="t-path">~/Library/Caches, except com.apple.*</div></div><span class="tag">safe</span></div>
         <div class="t"><div><div class="t-name">User Logs</div><div class="t-path">~/Library/Logs</div></div><span class="tag">safe</span></div>
         <div class="t"><div><div class="t-name">Trash</div><div class="t-path">~/.Trash</div></div><span class="tag careful">careful</span></div>
@@ -271,6 +307,7 @@
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><div><strong>Symbolic links are never followed,</strong> neither when measuring nor when deleting.</div></li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><div><strong>Honest results.</strong> Files that are in use are listed as failures, and the freed total counts only what was really removed.</div></li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><div><strong>Open source and tested.</strong> Read every line on GitHub; the tests run against a fake home folder, never yours.</div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><div><strong>Only from official sources.</strong> Download FreeMyMacOS from this site, its GitHub page or its Homebrew tap. Every build is signed with a Developer ID and notarized by Apple.</div></li>
       </ul>
     </section>
 
@@ -298,7 +335,8 @@
             <li><div><strong>Drag it into Applications</strong>Open the disk image and drop the app on the folder.</div></li>
             <li><div><strong>Open it and scan</strong>Signed with a Developer ID and notarized by Apple, so it opens without Gatekeeper warnings.</div></li>
           </ol>
-          <p class="verify">Version 1.0 SHA-256:<br><code>873da273ebcbc8b0079b1d9484ab6f89c8466b34137b674dc8c32eaf3b2ba19a</code></p>
+          <p class="verify">Or with Homebrew: <code>brew install --cask biggypanda/tap/freemymacos</code></p>
+          <p class="verify">The SHA-256 checksum of each download is in the <a href="https://github.com/biggypanda/FreeMyMacOS/releases/latest">release notes</a>.</p>
         </div>
         <img src="assets/install.png" alt="The FreeMyMacOS disk image window with an arrow from the app to the Applications folder" width="1320" height="800" loading="lazy">
       </div>
@@ -310,8 +348,12 @@
       <div class="faq">
         <details><summary>Is it really free?</summary><p>Yes. No trial, no subscription, no paid tier. The code is MIT licensed on GitHub.</p></details>
         <details><summary>Are deleted caches gone for good?</summary><p>Yes, they are removed, not moved to the Trash, because moving them would not free any space. Caches are rebuilt by the apps that use them, which is why only cache folders are on the list. Rows such as Xcode Archives and Trash are marked careful and ask first.</p></details>
+        <details><summary>Will Free RAM make my Mac faster?</summary><p>Usually not. macOS manages memory well on its own, and memory that looks "used" is often just cache it can hand back instantly. Free RAM runs macOS's own <code>purge</code> command, which can help in rare cases, such as before a heavy task right after closing big apps. Quitting an app you do not need does more.</p></details>
         <details><summary>Why does Free RAM ask for my password?</summary><p>It runs macOS's own <code>purge</code> command, which needs administrator rights. The password goes to the standard macOS prompt; the app never sees it.</p></details>
-        <details><summary>Why do some rows say "Grant access"?</summary><p>Trash and the Safari cache are protected by macOS. Giving the app Full Disk Access unlocks just those two rows; everything else works without it, and the app never asks on its own.</p></details>
+        <details><summary>Why doesn't Finder show the freed space right away?</summary><p>macOS may keep deleted files around for a while in local Time Machine snapshots, and Finder counts some space as "purgeable". The space comes back as macOS removes those snapshots, usually within a day. FreeMyMacOS reports what it actually deleted.</p></details>
+        <details><summary>Why do some rows say "Grant access"?</summary><p>Trash and the Safari cache are protected by macOS. Giving the app Full Disk Access unlocks just those two; everything else works without it, and the app never asks on its own.</p></details>
+        <details><summary>Does it need anything else running?</summary><p>No. For the VS Code, Cursor, Slack and Discord caches it only asks you to quit that app first, so it never pulls files out from under a running app.</p></details>
+        <details><summary>Which languages does it speak?</summary><p>English, Turkish and German, following your Mac's language.</p></details>
         <details><summary>Does it run in the background?</summary><p>No. There is no menu bar icon, login item or helper. It only does something while its window is open and you press a button.</p></details>
         <details><summary>Which Macs does it support?</summary><p>Any Mac running macOS 14 Sonoma or later, Apple silicon or Intel.</p></details>
       </div>
@@ -396,7 +438,19 @@
     "<strong>Download the disk image</strong>FreeMyMacOS.dmg, about 2 MB.": "<strong>Disk görüntüsünü indir</strong>FreeMyMacOS.dmg, yaklaşık 2 MB.",
     "<strong>Drag it into Applications</strong>Open the disk image and drop the app on the folder.": "<strong>Uygulamalar klasörüne sürükle</strong>Disk görüntüsünü aç ve uygulamayı klasörün üzerine bırak.",
     "<strong>Open it and scan</strong>Signed with a Developer ID and notarized by Apple, so it opens without Gatekeeper warnings.": "<strong>Aç ve tara</strong>Developer ID ile imzalı ve Apple tarafından onaylanmış (notarize), bu yüzden Gatekeeper uyarısı olmadan açılır.",
-    "Version 1.0 SHA-256:<br><code>873da273ebcbc8b0079b1d9484ab6f89c8466b34137b674dc8c32eaf3b2ba19a</code>": "Sürüm 1.0 SHA-256:<br><code>873da273ebcbc8b0079b1d9484ab6f89c8466b34137b674dc8c32eaf3b2ba19a</code>",
+    "Editor caches, skipped while the editor is open": "Editör önbellekleri, editör açıkken atlanır",
+    "Chat app caches, skipped while the app is open": "Sohbet uygulaması önbellekleri, uygulama açıkken atlanır",
+    "<strong>Only from official sources.</strong> Download FreeMyMacOS from this site, its GitHub page or its Homebrew tap. Every build is signed with a Developer ID and notarized by Apple.": "<strong>Yalnızca resmi kaynaklardan.</strong> FreeMyMacOS'u bu siteden, GitHub sayfasından ya da Homebrew tap'inden indir. Her sürüm Developer ID ile imzalı ve Apple tarafından onaylanmıştır.",
+    "Or with Homebrew: <code>brew install --cask biggypanda/tap/freemymacos</code>": "Ya da Homebrew ile: <code>brew install --cask biggypanda/tap/freemymacos</code>",
+    "The SHA-256 checksum of each download is in the <a href=\"https://github.com/biggypanda/FreeMyMacOS/releases/latest\">release notes</a>.": "Her indirmenin SHA-256 sağlama toplamı <a href=\"https://github.com/biggypanda/FreeMyMacOS/releases/latest\">sürüm notlarında</a> yer alır.",
+    "Will Free RAM make my Mac faster?": "Free RAM Mac'imi hızlandırır mı?",
+    "Usually not. macOS manages memory well on its own, and memory that looks \"used\" is often just cache it can hand back instantly. Free RAM runs macOS's own <code>purge</code> command, which can help in rare cases, such as before a heavy task right after closing big apps. Quitting an app you do not need does more.": "Genellikle hayır. macOS belleği kendi başına iyi yönetir; \"kullanılıyor\" görünen belleğin çoğu, anında geri verebileceği önbellektir. Free RAM, macOS'in kendi <code>purge</code> komutunu çalıştırır; büyük uygulamaları kapattıktan hemen sonra ağır bir işe başlamadan önce gibi nadir durumlarda işe yarayabilir. İhtiyacın olmayan bir uygulamadan çıkmak daha çok fayda sağlar.",
+    "Why doesn't Finder show the freed space right away?": "Finder boşalan yeri neden hemen göstermiyor?",
+    "macOS may keep deleted files around for a while in local Time Machine snapshots, and Finder counts some space as \"purgeable\". The space comes back as macOS removes those snapshots, usually within a day. FreeMyMacOS reports what it actually deleted.": "macOS silinen dosyaları bir süre yerel Time Machine anlık görüntülerinde tutabilir ve Finder bazı alanları \"temizlenebilir\" olarak sayar. macOS bu görüntüleri kaldırdıkça alan geri gelir, genellikle bir gün içinde. FreeMyMacOS gerçekten sildiği miktarı bildirir.",
+    "Does it need anything else running?": "Çalışırken başka bir şeye ihtiyaç duyar mı?",
+    "No. For the VS Code, Cursor, Slack and Discord caches it only asks you to quit that app first, so it never pulls files out from under a running app.": "Hayır. VS Code, Cursor, Slack ve Discord önbellekleri için yalnızca önce o uygulamadan çıkmanı ister; böylece çalışan bir uygulamanın dosyalarını altından çekmez.",
+    "Which languages does it speak?": "Hangi dilleri destekliyor?",
+    "English, Turkish and German, following your Mac's language.": "İngilizce, Türkçe ve Almanca; Mac'inin diline göre açılır.",
     "Questions": "Sorular",
     "Is it really free?": "Gerçekten ücretsiz mi?",
     "Yes. No trial, no subscription, no paid tier. The code is MIT licensed on GitHub.": "Evet. Deneme süresi, abonelik ya da ücretli sürüm yok. Kod, GitHub'da MIT lisansıyla yayında.",
@@ -405,7 +459,7 @@
     "Why does Free RAM ask for my password?": "Free RAM neden şifremi istiyor?",
     "It runs macOS's own <code>purge</code> command, which needs administrator rights. The password goes to the standard macOS prompt; the app never sees it.": "macOS'in kendi <code>purge</code> komutunu çalıştırır ve bu komut yönetici yetkisi ister. Şifreni macOS'in standart penceresine girersin; uygulama onu hiç görmez.",
     "Why do some rows say \"Grant access\"?": "Bazı satırlarda neden \"Grant access\" yazıyor?",
-    "Trash and the Safari cache are protected by macOS. Giving the app Full Disk Access unlocks just those two rows; everything else works without it, and the app never asks on its own.": "Çöp Sepeti ve Safari önbelleği macOS tarafından korunur. Uygulamaya Tam Disk Erişimi verirsen yalnızca bu iki satır açılır; geri kalan her şey o izin olmadan çalışır ve uygulama bu izni kendiliğinden istemez.",
+    "Trash and the Safari cache are protected by macOS. Giving the app Full Disk Access unlocks just those two; everything else works without it, and the app never asks on its own.": "Çöp Sepeti ve Safari önbelleği macOS tarafından korunur. Uygulamaya Tam Disk Erişimi verirsen yalnızca bu iki satır açılır; geri kalan her şey o izin olmadan çalışır ve uygulama bu izni kendiliğinden istemez.",
     "Does it run in the background?": "Arka planda çalışıyor mu?",
     "No. There is no menu bar icon, login item or helper. It only does something while its window is open and you press a button.": "Hayır. Menü çubuğu simgesi, açılışta başlayan öğe ya da yardımcı servis yok. Yalnızca penceresi açıkken ve sen bir butona bastığında bir şey yapar.",
     "Which Macs does it support?": "Hangi Mac'leri destekliyor?",
