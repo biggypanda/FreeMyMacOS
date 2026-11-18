@@ -2,6 +2,8 @@
 
 A free, open-source macOS app that clears developer and app caches you can safely lose, and shows what is using your memory. Native SwiftUI, no accounts, no network.
 
+**Website:** [freemymacos.com](https://freemymacos.com)
+
 ![FreeMyMacOS showing cleanable space and the list of cache folders](docs/design/screenshot-ready.png)
 
 *Screenshot shows sample data.*
@@ -17,7 +19,7 @@ Requires macOS 14 or later, on Apple silicon or Intel.
 
 ## Install
 
-Download `FreeMyMacOS.dmg` from the [latest release](https://github.com/biggypanda/FreeMyMacOS/releases/latest), open it and drag FreeMyMacOS into Applications. The app is signed with a Developer ID and notarized by Apple, so it opens without Gatekeeper warnings.
+Download it from [freemymacos.com](https://freemymacos.com), or get `FreeMyMacOS.dmg` from the [latest release](https://github.com/biggypanda/FreeMyMacOS/releases/latest), open it and drag FreeMyMacOS into Applications. The app is signed with a Developer ID and notarized by Apple, so it opens without Gatekeeper warnings.
 
 ![The FreeMyMacOS disk image window: drag the app onto the Applications folder](docs/design/dmg-window.png)
 
