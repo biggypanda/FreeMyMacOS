@@ -87,14 +87,18 @@ private struct Fixture {
     let model: AppModel
     let gate: ScanGate
     let log: CleanLog
+    let store: InMemoryPreferenceStore
 
     @MainActor
     init(
         targets: [CleanTarget],
         results: [ScanResult],
         reports: [CleanReport] = [],
-        gateOpen: Bool = true
+        gateOpen: Bool = true,
+        store: InMemoryPreferenceStore = InMemoryPreferenceStore(),
+        scanner customScanner: (any Scanning)? = nil
     ) {
+        self.store = store
         gate = ScanGate(open: gateOpen)
         log = CleanLog()
         let scanner = FakeScanner(
@@ -105,7 +109,10 @@ private struct Fixture {
             reports: Dictionary(uniqueKeysWithValues: reports.map { ($0.targetID, $0) }),
             log: log
         )
-        model = AppModel(targets: targets, scanner: scanner, cleaner: cleaner)
+        model = AppModel(
+            targets: targets, scanner: customScanner ?? scanner, cleaner: cleaner, store: store,
+            now: { Date(timeIntervalSince1970: 1_000) }
+        )
     }
 }
 
@@ -323,5 +330,117 @@ private struct Fixture {
         #expect(f.model.results.isEmpty)
         #expect(f.model.phase == .idle)
         #expect(f.model.selection.isEmpty)
+    }
+
+    // MARK: - Remembered selection and history
+
+    @Test func rescanKeepsManualChoices() async {
+        let f = Fixture(
+            targets: [target("safe"), target("careful", .careful), target("other")],
+            results: [result("safe", 10), result("careful", 20), result("other", 30)]
+        )
+        await f.model.scan()
+        #expect(f.model.selection == ["safe", "other"])
+        f.model.setSelected("safe", false)
+        f.model.setSelected("careful", true)
+        await f.model.scan()
+        #expect(f.model.selection == ["careful", "other"])
+    }
+
+    @Test func choicesSurviveANewModel() async {
+        let store = InMemoryPreferenceStore()
+        let first = Fixture(targets: [target("a"), target("b", .careful)],
+                            results: [result("a", 10), result("b", 20)], store: store)
+        await first.model.scan()
+        first.model.setSelected("a", false)
+        first.model.setSelected("b", true)
+
+        let second = Fixture(targets: [target("a"), target("b", .careful)],
+                             results: [result("a", 10), result("b", 20)], store: store)
+        await second.model.scan()
+        #expect(second.model.selection == ["b"])
+    }
+
+    @Test func emptyTargetIsNotSelectedEvenIfChosen() async {
+        let f = Fixture(targets: [target("a")], results: [result("a", 0)],
+                        store: InMemoryPreferenceStore(selectionChoices: ["a": true]))
+        await f.model.scan()
+        #expect(f.model.selection.isEmpty)
+    }
+
+    @Test func selectAllAndNoneCoverSelectableTargetsOnly() async {
+        let f = Fixture(
+            targets: [target("a"), target("b", .careful), target("empty"), target("denied")],
+            results: [result("a", 10), result("b", 20), result("empty", 0),
+                      result("denied", 0, .permissionDenied)]
+        )
+        await f.model.scan()
+        f.model.selectAll()
+        #expect(f.model.selection == ["a", "b"])
+        #expect(f.store.selectionChoices == ["a": true, "b": true])
+        f.model.selectNone()
+        #expect(f.model.selection.isEmpty)
+        #expect(f.store.selectionChoices == ["a": false, "b": false])
+    }
+
+    @Test func cleanAppendsHistory() async {
+        let fail = CleanFailure(path: "/x/a/1", reason: "Permission denied")
+        let f = Fixture(
+            targets: [target("a"), target("b")],
+            results: [result("a", 100), result("b", 50)],
+            reports: [CleanReport(targetID: "a", freedBytes: 90, failures: [fail]),
+                      CleanReport(targetID: "b", freedBytes: 50, failures: [])]
+        )
+        #expect(f.model.lastClean == nil)
+        await f.model.scan()
+        await f.model.clean()
+        let expected = CleanRecord(date: Date(timeIntervalSince1970: 1_000), freedBytes: 140,
+                                   targetIDs: ["a", "b"], failureCount: 1, isDryRun: false)
+        #expect(f.model.lastClean == expected)
+        #expect(f.store.history == [expected])
+    }
+
+    @Test func historyKeepsNewestFifty() async {
+        let old = (0..<AppModel.historyLimit).map {
+            CleanRecord(date: Date(timeIntervalSince1970: Double($0)), freedBytes: Int64($0),
+                        targetIDs: [], failureCount: 0, isDryRun: false)
+        }
+        let f = Fixture(targets: [target("a")], results: [result("a", 10)],
+                        reports: [CleanReport(targetID: "a", freedBytes: 10, failures: [])],
+                        store: InMemoryPreferenceStore(history: old))
+        #expect(f.model.history.count == AppModel.historyLimit)
+        await f.model.scan()
+        await f.model.clean()
+        #expect(f.model.history.count == AppModel.historyLimit)
+        #expect(f.model.history.first?.freedBytes == 1)
+        #expect(f.model.history.last?.freedBytes == 10)
+    }
+
+    @Test func scansRunAtMostFourAtOnce() async {
+        let meter = ConcurrencyMeter()
+        let targets = (0..<10).map { target("t\($0)") }
+        let f = Fixture(targets: targets, results: [], scanner: MeteredScanner(meter: meter))
+        await f.model.scan()
+        #expect(f.model.results.count == 10)
+        let peak = await meter.peak
+        #expect(peak <= AppModel.maxConcurrentScans)
+        #expect(peak >= 2)
+    }
+}
+
+private actor ConcurrencyMeter {
+    private var current = 0
+    private(set) var peak = 0
+    func enter() { current += 1; peak = max(peak, current) }
+    func leave() { current -= 1 }
+}
+
+private struct MeteredScanner: Scanning {
+    let meter: ConcurrencyMeter
+    func scan(_ target: CleanTarget) async -> ScanResult {
+        await meter.enter()
+        try? await Task.sleep(for: .milliseconds(20))
+        await meter.leave()
+        return ScanResult(targetID: target.id, bytes: 1, itemCount: 1, status: .ok, topItems: [])
     }
 }

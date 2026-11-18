@@ -19,8 +19,11 @@ public final class AppModel {
     public private(set) var results: [String: ScanResult] = [:]
     /// Failures of the last clean. Kept until the next clean starts.
     public private(set) var failures: [CleanFailure] = []
-    /// Ids of the targets the user wants cleaned.
-    public var selection: Set<String> = []
+    /// Ids of the targets the user wants cleaned. Change it with `setSelected`, `selectAll`
+    /// or `selectNone`, which also remember the choice for the next scan and launch.
+    public internal(set) var selection: Set<String> = []
+    /// Finished cleans, oldest first, at most `historyLimit`.
+    public private(set) var history: [CleanRecord]
     /// In catalog order.
     public let targets: [CleanTarget]
     /// True when the cleaner only measures and deletes nothing, so the result reads
@@ -29,17 +32,33 @@ public final class AppModel {
 
     @ObservationIgnored private let scanner: any Scanning
     @ObservationIgnored private let cleaner: any Cleaning
+    @ObservationIgnored private let store: any PreferenceStore
+    @ObservationIgnored private let now: () -> Date
     /// True for the whole of a scan or clean, including the rescan after a clean
     /// (when `phase` already reads `.done`). This is the re-entrancy guard.
     @ObservationIgnored private var isBusy = false
     /// `acknowledgeDone()` was called while the post-clean rescan was still running.
     @ObservationIgnored private var isDoneAcknowledged = false
 
-    public init(targets: [CleanTarget], scanner: any Scanning, cleaner: any Cleaning, isDryRun: Bool = false) {
+    /// Most scans that run at once. Each one walks a folder tree, so more mostly adds disk contention.
+    public static let maxConcurrentScans = 4
+    public static let historyLimit = 50
+
+    public init(
+        targets: [CleanTarget],
+        scanner: any Scanning,
+        cleaner: any Cleaning,
+        isDryRun: Bool = false,
+        store: any PreferenceStore = InMemoryPreferenceStore(),
+        now: @escaping () -> Date = Date.init
+    ) {
         self.targets = targets
         self.scanner = scanner
         self.cleaner = cleaner
         self.isDryRun = isDryRun
+        self.store = store
+        self.now = now
+        self.history = store.history
     }
 
     // MARK: - Derived state
@@ -60,16 +79,49 @@ public final class AppModel {
         cleanableSelection.contains { $0.tier == .careful }
     }
 
+    /// The latest finished clean, if any.
+    public var lastClean: CleanRecord? { history.last }
+
+    /// Targets that can be selected right now: status `.ok` with something to free.
+    public var selectableTargets: [CleanTarget] {
+        targets.filter { target in
+            guard let result = results[target.id] else { return false }
+            return result.status == .ok && result.bytes > 0
+        }
+    }
+
     /// Selected targets with status `.ok`, in catalog order: exactly what `clean()` cleans.
     private var cleanableSelection: [CleanTarget] {
         targets.filter { selection.contains($0.id) && results[$0.id]?.status == .ok }
     }
 
+    // MARK: - Selection
+
+    /// Selects or deselects one target and remembers the choice, so a rescan or the next
+    /// launch keeps it.
+    public func setSelected(_ id: String, _ selected: Bool) {
+        if selected {
+            selection.insert(id)
+        } else {
+            selection.remove(id)
+        }
+        store.selectionChoices[id] = selected
+    }
+
+    public func selectAll() {
+        for target in selectableTargets { setSelected(target.id, true) }
+    }
+
+    public func selectNone() {
+        for target in selectableTargets { setSelected(target.id, false) }
+    }
+
     // MARK: - Actions
 
     /// Measures every target concurrently; each result is written to `results` as it arrives.
-    /// When done, the selection becomes the safe-tier targets with status `.ok` and bytes > 0,
-    /// and the phase is `.ready`. If the calling task is cancelled, partial results are
+    /// When done, the selection is every target with status `.ok` and bytes > 0 that the user
+    /// chose before (`setSelected`), or, without a choice, that is in the safe tier; the phase
+    /// is `.ready`. If the calling task is cancelled, partial results are
     /// discarded: the previous results come back and the selection is left unchanged.
     public func scan() async {
         guard !isBusy else { return }
@@ -87,12 +139,10 @@ public final class AppModel {
             phase = previous.isEmpty ? .idle : .ready
             return
         }
+        let choices = store.selectionChoices
         selection = Set(
-            targets
-                .filter { target in
-                    guard target.tier == .safe, let result = results[target.id] else { return false }
-                    return result.status == .ok && result.bytes > 0
-                }
+            selectableTargets
+                .filter { choices[$0.id] ?? ($0.tier == .safe) }
                 .map(\.id)
         )
         phase = .ready
@@ -120,6 +170,10 @@ public final class AppModel {
             failures += report.failures
         }
         phase = .done(freed: freed)
+        record(CleanRecord(
+            date: now(), freedBytes: freed, targetIDs: toClean.map(\.id),
+            failureCount: failures.count, isDryRun: isDryRun
+        ))
 
         await measure(toClean)
         // Drop cleaned targets that no longer have anything to clean.
@@ -148,15 +202,31 @@ public final class AppModel {
 
     // MARK: - Private
 
-    /// Scans `subset` concurrently, writing each result as it arrives. Stops writing as
-    /// soon as the task is cancelled, since a cancelled scan returns partial numbers.
+    private func record(_ entry: CleanRecord) {
+        var all = store.history
+        all.append(entry)
+        if all.count > Self.historyLimit {
+            all.removeFirst(all.count - Self.historyLimit)
+        }
+        store.history = all
+        history = all
+    }
+
+    /// Scans `subset`, at most `maxConcurrentScans` at a time, writing each result as it
+    /// arrives. Stops writing as soon as the task is cancelled, since a cancelled scan
+    /// returns partial numbers.
     private func measure(_ subset: [CleanTarget]) async {
         let scanner = self.scanner
         await withTaskGroup(of: ScanResult.self) { group in
-            for target in subset {
+            var pending = subset[...]
+            for _ in 0..<Self.maxConcurrentScans {
+                guard let target = pending.popFirst() else { break }
                 group.addTask { await scanner.scan(target) }
             }
             for await result in group {
+                if !Task.isCancelled, let target = pending.popFirst() {
+                    group.addTask { await scanner.scan(target) }
+                }
                 if Task.isCancelled { continue }
                 results[result.targetID] = result
             }

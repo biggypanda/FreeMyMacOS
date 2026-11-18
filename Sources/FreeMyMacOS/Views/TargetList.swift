@@ -93,11 +93,7 @@ struct TargetList: View {
 
     private func toggleSelected(_ id: String) {
         withAnimation(Theme.motion(reduced: reduceMotion)) {
-            if model.selection.contains(id) {
-                model.selection.remove(id)
-            } else {
-                model.selection.insert(id)
-            }
+            model.setSelected(id, !model.selection.contains(id))
         }
     }
 }
