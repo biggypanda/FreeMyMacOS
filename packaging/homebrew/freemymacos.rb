@@ -1,6 +1,6 @@
 cask "freemymacos" do
   version "1.0.1"
-  sha256 "REPLACE_WITH_SHA256_OF_THE_NOTARIZED_DMG"
+  sha256 "e6915046ebd3d8fb7b27edeb785d097ba8f849057f73137f3b53d79f60a5eeb7"
 
   url "https://github.com/biggypanda/FreeMyMacOS/releases/download/v#{version}/FreeMyMacOS.dmg"
   name "FreeMyMacOS"
