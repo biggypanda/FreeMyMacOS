@@ -453,7 +453,7 @@
     var q = new URLSearchParams(location.search).get("lang");
     if (q === "tr" || q === "en") return q;
     try { var s = localStorage.getItem("lang"); if (s === "tr" || s === "en") return s; } catch (e) {}
-    return (navigator.language || "").toLowerCase().indexOf("tr") === 0 ? "tr" : "en";
+    return "en";
   }
   [].forEach.call(document.querySelectorAll(".lang button"), function (b) {
     b.addEventListener("click", function () { var l = b.getAttribute("data-lang"); save(l); apply(l); });
