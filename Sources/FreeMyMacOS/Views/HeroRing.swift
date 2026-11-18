@@ -30,6 +30,8 @@ struct HeroPanel: View {
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(!canClean)
+            // Also in the Clean menu; a focused row would otherwise swallow ⌘⏎ before the menu sees it.
+            .keyboardShortcut(.return, modifiers: .command)
             .padding(.top, Theme.heroButtonTopSpacing)
 
             Button("Rescan") { Task { await model.scan() } }
