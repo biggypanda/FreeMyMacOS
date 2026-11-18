@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FreeMyMacOS — free Mac cache cleaner</title>
+<meta name="description" content="A free, open-source macOS app that clears developer and app caches you can safely lose, and shows what is using your memory. No accounts, no network, no tracking.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0B0D12">
+<link rel="canonical" href="https://freemymacos.com/">
+<link rel="icon" type="image/png" href="assets/favicon-64.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://freemymacos.com/">
+<meta property="og:title" content="FreeMyMacOS — free Mac cache cleaner">
+<meta property="og:description" content="Clear Xcode, npm, browser and app caches you can safely lose. Free, open source, no network access.">
+<meta property="og:image" content="https://freemymacos.com/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root {
+    --bg: #0B0D12;
+    --surface: rgba(255,255,255,.04);
+    --surface-2: rgba(255,255,255,.07);
+    --stroke: rgba(255,255,255,.08);
+    --text: rgba(255,255,255,.92);
+    --text-2: rgba(255,255,255,.58);
+    --text-3: rgba(255,255,255,.36);
+    --a1: #5EF2C4;
+    --a2: #3AA8FF;
+    --on-accent: #06231C;
+    --warn: #FFB454;
+    --grad: linear-gradient(135deg, var(--a1), var(--a2));
+    --radius: 18px;
+    --max: 1080px;
+    --rounded: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 17px/1.6 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: inherit; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+  @media (max-width: 600px) { .wrap { padding: 0 16px; } body { font-size: 16px; } }
+
+  /* Nav */
+  .nav { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(160%) blur(16px); -webkit-backdrop-filter: saturate(160%) blur(16px);
+         background: rgba(11,13,18,.72); border-bottom: 1px solid var(--stroke); }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; white-space: nowrap; text-decoration: none; font: 600 17px var(--rounded); letter-spacing: -.01em; }
+  .brand img { width: 30px; height: 30px; }
+  .nav-links { display: flex; align-items: center; gap: 6px; flex: none; }
+  .nav-links a { text-decoration: none; color: var(--text-2); font-size: 15px; padding: 8px 12px; border-radius: 10px; transition: color .2s, background .2s; }
+  .nav-links a:hover { color: var(--text); background: var(--surface-2); }
+  .nav-links .btn-sm { color: var(--on-accent); background: var(--grad); font-weight: 600; }
+  .nav-links .btn-sm:hover { color: var(--on-accent); background: var(--grad); filter: brightness(1.06); }
+  .lang { display: flex; padding: 3px; border-radius: 11px; background: var(--surface-2); border: 1px solid var(--stroke); margin: 0 4px; }
+  .lang button { all: unset; cursor: pointer; font: 600 13px var(--sans); letter-spacing: .03em; color: var(--text-3); padding: 5px 9px; border-radius: 8px; transition: color .2s, background .2s; }
+  .lang button:hover { color: var(--text); }
+  .lang button[aria-pressed="true"] { color: var(--text); background: rgba(255,255,255,.12); }
+  .lang button:focus-visible { outline: 2px solid var(--a1); outline-offset: 2px; }
+  @media (max-width: 640px) { .nav-links .hide-sm { display: none; } }
+  @media (max-width: 380px) { .brand { font-size: 15px; } .brand img { width: 26px; height: 26px; } .btn { padding: 15px 22px; font-size: 17px; } }
+
+  /* Hero */
+  .hero { position: relative; padding: 88px 0 40px; text-align: center; }
+  .hero::before { content: ""; position: absolute; inset: -200px 0 auto; height: 900px; z-index: -1; pointer-events: none;
+    background: radial-gradient(600px 420px at 30% 30%, rgba(94,242,196,.13), transparent 70%),
+                radial-gradient(560px 420px at 72% 40%, rgba(58,168,255,.10), transparent 70%); }
+  .hero-icon { width: 104px; height: 104px; margin: 0 auto 28px; filter: drop-shadow(0 18px 40px rgba(0,0,0,.5)); }
+  h1, h2, h3 { font-family: var(--rounded); letter-spacing: -.025em; line-height: 1.1; margin: 0; }
+  h1 { font-size: clamp(40px, 7vw, 72px); font-weight: 700; }
+  .grad-text { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lede { max-width: 620px; margin: 22px auto 0; color: var(--text-2); font-size: clamp(17px, 2.2vw, 20px); }
+  .cta { margin-top: 36px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .btn { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 600 18px var(--rounded);
+         color: var(--on-accent); background: var(--grad); padding: 17px 30px; border-radius: 16px;
+         box-shadow: 0 12px 40px -10px rgba(94,242,196,.45); transition: transform .25s cubic-bezier(.3,1.4,.5,1), box-shadow .25s, filter .2s; }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 18px 50px -10px rgba(94,242,196,.55); filter: brightness(1.05); }
+  .btn:active { transform: translateY(0); }
+  .btn { white-space: nowrap; }
+  .btn svg { width: 22px; height: 22px; }
+  .meta { color: var(--text-3); font-size: 14px; }
+  .meta span + span::before { content: "·"; margin: 0 8px; }
+  .secondary-link { color: var(--text-2); font-size: 15px; text-decoration: none; border-bottom: 1px solid var(--stroke); padding-bottom: 1px; }
+  .secondary-link:hover { color: var(--text); border-color: var(--text-3); }
+
+  .shot { margin: 64px auto 0; max-width: 980px; position: relative; }
+  .shot::before { content: ""; position: absolute; inset: 8% 6% -4%; background: var(--grad); filter: blur(80px); opacity: .18; z-index: -1; border-radius: 40px; }
+  .shot img { border-radius: 14px; border: 1px solid rgba(255,255,255,.1); box-shadow: 0 40px 100px -20px rgba(0,0,0,.8); }
+  .caption { margin-top: 14px; font-size: 13px; color: var(--text-3); text-align: center; }
+
+  /* Sections */
+  section { padding: 96px 0 0; }
+  .eyebrow { font: 600 13px var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--a1); margin-bottom: 14px; }
+  h2 { font-size: clamp(30px, 4.6vw, 46px); font-weight: 700; }
+  .section-lede { color: var(--text-2); max-width: 640px; margin: 16px 0 0; font-size: 18px; }
+  .center { text-align: center; }
+  .center .section-lede { margin-left: auto; margin-right: auto; }
+
+  .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 44px; }
+  .card { background: var(--surface); border: 1px solid var(--stroke); border-radius: var(--radius); padding: 30px; }
+  .card h3 { font-size: 22px; font-weight: 650; margin: 18px 0 10px; }
+  .card p { margin: 0; color: var(--text-2); }
+  .card-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: rgba(94,242,196,.1); color: var(--a1); }
+  .card-icon svg { width: 24px; height: 24px; }
+  .card code { font: 14px var(--mono); color: var(--text); background: var(--surface-2); padding: 2px 6px; border-radius: 6px; }
+  @media (max-width: 760px) { .cards { grid-template-columns: 1fr; } .card { padding: 24px; } }
+
+  /* Target list */
+  .targets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 40px; margin-top: 44px; padding: 10px 30px;
+             background: var(--surface); border: 1px solid var(--stroke); border-radius: var(--radius); }
+  .t { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 15px 0; border-bottom: 1px solid var(--stroke); min-width: 0; }
+  .t:nth-last-child(-n+2) { border-bottom: 0; }
+  .t-name { font-weight: 550; }
+  .t-path { font: 13px var(--mono); color: var(--text-3); margin-top: 2px; overflow-wrap: anywhere; }
+  .tag { flex: none; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 99px; color: var(--a1); background: rgba(94,242,196,.1); }
+  .tag.careful { color: var(--warn); background: rgba(255,180,84,.12); }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 24px; margin-top: 18px; font-size: 14px; color: var(--text-3); }
+  .legend .tag { margin-right: 8px; }
+  @media (max-width: 760px) { .targets { grid-template-columns: 1fr; padding: 6px 20px; } .t:nth-last-child(2) { border-bottom: 1px solid var(--stroke); } }
+
+  /* Safety */
+  .checks { list-style: none; margin: 40px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 40px; }
+  .checks li { display: flex; gap: 14px; color: var(--text-2); }
+  .checks li strong { color: var(--text); font-weight: 600; }
+  .checks svg { flex: none; width: 22px; height: 22px; margin-top: 3px; color: var(--a1); }
+  @media (max-width: 760px) { .checks { grid-template-columns: 1fr; } }
+
+  /* Privacy band */
+  .privacy { margin-top: 96px; border-radius: 26px; padding: 64px 40px; text-align: center; position: relative; overflow: hidden;
+             background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); border: 1px solid var(--stroke); }
+  .privacy::before { content: ""; position: absolute; width: 520px; height: 520px; left: 50%; top: -300px; transform: translateX(-50%);
+                     background: radial-gradient(closest-side, rgba(94,242,196,.18), transparent); pointer-events: none; }
+  .pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 30px; }
+  .pill { font-size: 15px; padding: 9px 16px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--stroke); color: var(--text); }
+  .pill s { color: var(--text-3); text-decoration-color: var(--a1); text-decoration-thickness: 2px; }
+  @media (max-width: 600px) { .privacy { padding: 48px 20px; } }
+
+  /* Install */
+  .install { display: grid; grid-template-columns: 1fr 1.15fr; gap: 56px; align-items: center; margin-top: 8px; }
+  .steps { list-style: none; counter-reset: s; padding: 0; margin: 32px 0 0; display: grid; gap: 22px; }
+  .steps li { counter-increment: s; display: grid; grid-template-columns: 40px 1fr; gap: 16px; color: var(--text-2); }
+  .steps li::before { content: counter(s); width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+                      font: 700 17px var(--rounded); color: var(--on-accent); background: var(--grad); }
+  .steps strong { display: block; color: var(--text); font-weight: 600; }
+  .install img { border-radius: 14px; border: 1px solid rgba(255,255,255,.1); box-shadow: 0 30px 80px -20px rgba(0,0,0,.8); }
+  .verify { margin-top: 28px; font-size: 13px; color: var(--text-3); }
+  .verify code { font: 12px var(--mono); color: var(--text-2); overflow-wrap: anywhere; }
+  @media (max-width: 860px) { .install { grid-template-columns: 1fr; gap: 36px; } }
+
+  /* FAQ */
+  .faq { margin-top: 36px; border-top: 1px solid var(--stroke); }
+  details { border-bottom: 1px solid var(--stroke); }
+  summary { list-style: none; cursor: pointer; padding: 22px 40px 22px 0; position: relative; font: 600 18px var(--rounded); }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: ""; position: absolute; right: 6px; top: 50%; width: 10px; height: 10px; margin-top: -7px;
+                   border-right: 2px solid var(--text-3); border-bottom: 2px solid var(--text-3); transform: rotate(45deg); transition: transform .25s; }
+  details[open] summary::after { transform: rotate(-135deg); margin-top: -2px; }
+  details p { margin: -6px 0 22px; color: var(--text-2); max-width: 760px; }
+  summary:focus-visible, a:focus-visible { outline: 2px solid var(--a1); outline-offset: 3px; border-radius: 8px; }
+
+  /* Final CTA + footer */
+  .final { text-align: center; padding: 120px 0 100px; }
+  .final img { width: 84px; height: 84px; margin: 0 auto 26px; }
+  footer { border-top: 1px solid var(--stroke); padding: 28px 0 40px; color: var(--text-3); font-size: 14px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; }
+  footer a { color: var(--text-2); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+  footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="assets/favicon-64.png" alt="" width="30" height="30">FreeMyMacOS</a>
+    <nav class="nav-links" aria-label="Main">
+      <a class="hide-sm" href="#cleans">What it cleans</a>
+      <a class="hide-sm" href="#faq">FAQ</a>
+      <a class="hide-sm" href="https://github.com/biggypanda/FreeMyMacOS">GitHub</a>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="tr" aria-pressed="false">TR</button>
+      </div>
+      <a class="btn-sm" href="https://github.com/biggypanda/FreeMyMacOS/releases/latest/download/FreeMyMacOS.dmg">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap">
+    <section class="hero" style="padding-top:88px">
+      <img class="hero-icon" src="assets/icon-512.png" alt="FreeMyMacOS app icon" width="104" height="104">
+      <h1>Give your Mac<br><span class="grad-text">room to breathe.</span></h1>
+      <p class="lede">FreeMyMacOS clears the developer and app caches you can safely lose, and shows what is using your memory. Free, open source, and it never touches the internet.</p>
+      <div class="cta">
+        <a class="btn" href="https://github.com/biggypanda/FreeMyMacOS/releases/latest/download/FreeMyMacOS.dmg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+          <span>Download for Mac</span>
+        </a>
+        <div class="meta"><span>Free</span><span>macOS 14 or later</span><span>Apple silicon &amp; Intel</span><span>2 MB</span></div>
+        <a class="secondary-link" href="https://github.com/biggypanda/FreeMyMacOS">View the source on GitHub</a>
+      </div>
+      <figure class="shot" style="margin-left:auto;margin-right:auto">
+        <img src="assets/app.png" alt="The FreeMyMacOS window: a ring showing 24.06 GB that can go, a Clean button, and a list of cache folders with their sizes" width="1760" height="1120">
+        <figcaption class="caption">Screenshot shows sample data.</figcaption>
+      </figure>
+    </section>
+
+    <section id="what">
+      <div class="center">
+        <div class="eyebrow">What it does</div>
+        <h2>Two things, done carefully.</h2>
+        <p class="section-lede">No background scanning, no menu bar agent, no helper daemon. Open it when you need space, close it when you are done.</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" opacity=".3"/><path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5"/></svg></div>
+          <h3>Disk cleanup</h3>
+          <p>Scans a fixed list of cache folders, shows exactly how much each one takes on disk, and empties the ones you pick. Every number is measured, never estimated.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="7" width="17" height="10" rx="2"/><path d="M7.5 10.5v3M11 10.5v3M14.5 10.5v3M7 17v2.5M12 17v2.5M17 17v2.5"/></svg></div>
+          <h3>Memory panel</h3>
+          <p>Shows used and total memory and the five apps using the most, each with a normal <strong>Quit</strong> button. <strong>Free RAM</strong> runs <code>purge</code> after asking for your password.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="cleans">
+      <div class="eyebrow">Exactly what it cleans</div>
+      <h2>A short list. Nothing else.</h2>
+      <p class="section-lede">The folders below stay; only what is inside them goes. Tools you do not have installed are simply hidden. The app never takes a path from you, so nothing outside this list can be deleted.</p>
+      <div class="targets">
+        <div class="t"><div><div class="t-name">Xcode DerivedData</div><div class="t-path">~/Library/Developer/Xcode/DerivedData</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">Simulator Caches</div><div class="t-path">~/Library/Developer/CoreSimulator/Caches</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">iOS Device Support</div><div class="t-path">~/Library/Developer/Xcode/iOS DeviceSupport</div></div><span class="tag careful">careful</span></div>
+        <div class="t"><div><div class="t-name">Xcode Archives</div><div class="t-path">~/Library/Developer/Xcode/Archives</div></div><span class="tag careful">careful</span></div>
+        <div class="t"><div><div class="t-name">SwiftPM Cache</div><div class="t-path">~/Library/Caches/org.swift.swiftpm</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">npm / Yarn / pnpm</div><div class="t-path">~/.npm/_cacache, Yarn and pnpm stores</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">pip Cache</div><div class="t-path">~/Library/Caches/pip</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">CocoaPods Cache</div><div class="t-path">~/Library/Caches/CocoaPods</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">Gradle Caches</div><div class="t-path">~/.gradle/caches</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">Homebrew Downloads</div><div class="t-path">~/Library/Caches/Homebrew</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">Browser Caches</div><div class="t-path">Chrome, Safari, Firefox and Arc caches</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">App Caches</div><div class="t-path">~/Library/Caches, except com.apple.*</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">User Logs</div><div class="t-path">~/Library/Logs</div></div><span class="tag">safe</span></div>
+        <div class="t"><div><div class="t-name">Trash</div><div class="t-path">~/.Trash</div></div><span class="tag careful">careful</span></div>
+      </div>
+      <div class="legend">
+        <div><span class="tag">safe</span>selected by default, rebuilt automatically when needed</div>
+        <div><span class="tag careful">careful</span>off by default, asks before cleaning</div>
+      </div>
+    </section>
+
+    <section id="safety">
+      <div class="eyebrow">Built to be boring</div>
+      <h2>It only deletes what it says it does.</h2>
+      <ul class="checks">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><div><strong>Every deletion is checked first.</strong> Each item must be provably inside one of the folders above, or it is skipped.</div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><div><strong>Never your files.</strong> Documents, photos, projects, app data, settings, keychains, mail and messages are out of reach.</div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><div><strong>Never system folders.</strong> Everything it removes is inside your own home folder.</div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><div><strong>Symbolic links are never followed,</strong> neither when measuring nor when deleting.</div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><div><strong>Honest results.</strong> Files that are in use are listed as failures, and the freed total counts only what was really removed.</div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><div><strong>Open source and tested.</strong> Read every line on GitHub; the tests run against a fake home folder, never yours.</div></li>
+      </ul>
+    </section>
+
+    <div class="privacy">
+      <div class="eyebrow">Privacy</div>
+      <h2>Nothing leaves your Mac.</h2>
+      <p class="section-lede" style="margin-left:auto;margin-right:auto">FreeMyMacOS makes no network requests at all. Your files, sizes and app list stay on your computer.</p>
+      <div class="pills">
+        <span class="pill"><s>Accounts</s></span>
+        <span class="pill"><s>Telemetry</s></span>
+        <span class="pill"><s>Analytics</s></span>
+        <span class="pill"><s>License keys</s></span>
+        <span class="pill"><s>Upsells</s></span>
+        <span class="pill"><s>Auto-update pings</s></span>
+      </div>
+    </div>
+
+    <section id="install">
+      <div class="install">
+        <div>
+          <div class="eyebrow">Install</div>
+          <h2>Ready in a minute.</h2>
+          <ol class="steps">
+            <li><div><strong>Download the disk image</strong>FreeMyMacOS.dmg, about 2 MB.</div></li>
+            <li><div><strong>Drag it into Applications</strong>Open the disk image and drop the app on the folder.</div></li>
+            <li><div><strong>Open it and scan</strong>Signed with a Developer ID and notarized by Apple, so it opens without Gatekeeper warnings.</div></li>
+          </ol>
+          <p class="verify">Version 1.0 SHA-256:<br><code>873da273ebcbc8b0079b1d9484ab6f89c8466b34137b674dc8c32eaf3b2ba19a</code></p>
+        </div>
+        <img src="assets/install.png" alt="The FreeMyMacOS disk image window with an arrow from the app to the Applications folder" width="1320" height="800" loading="lazy">
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="eyebrow">FAQ</div>
+      <h2>Questions</h2>
+      <div class="faq">
+        <details><summary>Is it really free?</summary><p>Yes. No trial, no subscription, no paid tier. The code is MIT licensed on GitHub.</p></details>
+        <details><summary>Are deleted caches gone for good?</summary><p>Yes, they are removed, not moved to the Trash, because moving them would not free any space. Caches are rebuilt by the apps that use them, which is why only cache folders are on the list. Rows such as Xcode Archives and Trash are marked careful and ask first.</p></details>
+        <details><summary>Why does Free RAM ask for my password?</summary><p>It runs macOS's own <code>purge</code> command, which needs administrator rights. The password goes to the standard macOS prompt; the app never sees it.</p></details>
+        <details><summary>Why do some rows say "Grant access"?</summary><p>Trash and the Safari cache are protected by macOS. Giving the app Full Disk Access unlocks just those two rows; everything else works without it, and the app never asks on its own.</p></details>
+        <details><summary>Does it run in the background?</summary><p>No. There is no menu bar icon, login item or helper. It only does something while its window is open and you press a button.</p></details>
+        <details><summary>Which Macs does it support?</summary><p>Any Mac running macOS 14 Sonoma or later, Apple silicon or Intel.</p></details>
+      </div>
+    </section>
+
+    <div class="final">
+      <img src="assets/icon-512.png" alt="" width="84" height="84" loading="lazy">
+      <h2>Free up your Mac.</h2>
+      <p class="section-lede" style="margin:16px auto 34px">It takes a minute to install and a few seconds to scan.</p>
+      <a class="btn" href="https://github.com/biggypanda/FreeMyMacOS/releases/latest/download/FreeMyMacOS.dmg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+        <span>Download for Mac</span>
+      </a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>© 2026 FreeMyMacOS · MIT License</div>
+    <nav aria-label="Footer">
+      <a href="https://github.com/biggypanda/FreeMyMacOS">Source code</a>
+      <a href="https://github.com/biggypanda/FreeMyMacOS/releases">All releases</a>
+      <a href="https://github.com/biggypanda/FreeMyMacOS/issues">Report a problem</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // English is written in the page; this maps each English block to its Turkish version.
+  var TR = {
+    "What it cleans": "Neleri temizler",
+    "FAQ": "SSS",
+    "GitHub": "GitHub",
+    "Download": "İndir",
+    "Download for Mac": "Mac için indir",
+    "Give your Mac<br><span class=\"grad-text\">room to breathe.</span>": "Mac'ine<br><span class=\"grad-text\">nefes aldır.</span>",
+    "FreeMyMacOS clears the developer and app caches you can safely lose, and shows what is using your memory. Free, open source, and it never touches the internet.": "FreeMyMacOS, gönül rahatlığıyla silebileceğin geliştirici ve uygulama önbelleklerini temizler, belleğini neyin kullandığını gösterir. Ücretsiz, açık kaynak ve internete hiç bağlanmaz.",
+    "Free": "Ücretsiz",
+    "macOS 14 or later": "macOS 14 ve üzeri",
+    "Apple silicon &amp; Intel": "Apple silicon ve Intel",
+    "2 MB": "2 MB",
+    "View the source on GitHub": "Kaynak kodu GitHub'da incele",
+    "Screenshot shows sample data.": "Ekran görüntüsündeki veriler örnektir.",
+    "What it does": "Ne yapar",
+    "Two things, done carefully.": "İki iş, özenle yapılmış.",
+    "No background scanning, no menu bar agent, no helper daemon. Open it when you need space, close it when you are done.": "Arka planda tarama yok, menü çubuğu simgesi yok, yardımcı servis yok. Yer lazım olunca aç, işin bitince kapat.",
+    "Disk cleanup": "Disk temizliği",
+    "Scans a fixed list of cache folders, shows exactly how much each one takes on disk, and empties the ones you pick. Every number is measured, never estimated.": "Sabit bir önbellek klasörü listesini tarar, her birinin diskte tam olarak ne kadar yer kapladığını gösterir ve seçtiklerini boşaltır. Her sayı ölçülür, asla tahmin edilmez.",
+    "Memory panel": "Bellek paneli",
+    "Shows used and total memory and the five apps using the most, each with a normal <strong>Quit</strong> button. <strong>Free RAM</strong> runs <code>purge</code> after asking for your password.": "Kullanılan ve toplam belleği, en çok bellek kullanan beş uygulamayı gösterir; her birinin yanında normal bir <strong>Quit</strong> (Çık) butonu vardır. <strong>Free RAM</strong>, şifreni sorduktan sonra <code>purge</code> komutunu çalıştırır.",
+    "Exactly what it cleans": "Tam olarak neleri temizler",
+    "A short list. Nothing else.": "Kısa bir liste. Başka hiçbir şey.",
+    "The folders below stay; only what is inside them goes. Tools you do not have installed are simply hidden. The app never takes a path from you, so nothing outside this list can be deleted.": "Aşağıdaki klasörler yerinde kalır, yalnızca içindekiler silinir. Bilgisayarında kurulu olmayan araçlar listede görünmez. Uygulama senden hiçbir zaman yol almaz, bu yüzden bu listenin dışındaki hiçbir şey silinemez.",
+    "~/.npm/_cacache, Yarn and pnpm stores": "~/.npm/_cacache, Yarn ve pnpm depoları",
+    "Chrome, Safari, Firefox and Arc caches": "Chrome, Safari, Firefox ve Arc önbellekleri",
+    "~/Library/Caches, except com.apple.*": "~/Library/Caches, com.apple.* hariç",
+    "safe": "güvenli",
+    "careful": "dikkat",
+    "<span class=\"tag\">safe</span>selected by default, rebuilt automatically when needed": "<span class=\"tag\">güvenli</span>varsayılan olarak seçili, gerektiğinde kendiliğinden yeniden oluşur",
+    "<span class=\"tag careful\">careful</span>off by default, asks before cleaning": "<span class=\"tag careful\">dikkat</span>varsayılan olarak kapalı, temizlemeden önce sorar",
+    "Built to be boring": "Bilerek sıkıcı",
+    "It only deletes what it says it does.": "Yalnızca söylediğini siler.",
+    "<strong>Every deletion is checked first.</strong> Each item must be provably inside one of the folders above, or it is skipped.": "<strong>Her silme önce kontrol edilir.</strong> Her öğenin yukarıdaki klasörlerden birinin içinde olduğu kanıtlanmalı, yoksa atlanır.",
+    "<strong>Never your files.</strong> Documents, photos, projects, app data, settings, keychains, mail and messages are out of reach.": "<strong>Dosyalarına asla dokunmaz.</strong> Belgeler, fotoğraflar, projeler, uygulama verileri, ayarlar, anahtar zincirleri, e-postalar ve mesajlar erişim dışındadır.",
+    "<strong>Never system folders.</strong> Everything it removes is inside your own home folder.": "<strong>Sistem klasörlerine asla dokunmaz.</strong> Sildiği her şey kendi ana klasörünün içindedir.",
+    "<strong>Symbolic links are never followed,</strong> neither when measuring nor when deleting.": "<strong>Sembolik bağlantılar asla takip edilmez,</strong> ne ölçerken ne silerken.",
+    "<strong>Honest results.</strong> Files that are in use are listed as failures, and the freed total counts only what was really removed.": "<strong>Dürüst sonuçlar.</strong> Kullanımdaki dosyalar başarısız olarak listelenir; açılan alan toplamı yalnızca gerçekten silineni sayar.",
+    "<strong>Open source and tested.</strong> Read every line on GitHub; the tests run against a fake home folder, never yours.": "<strong>Açık kaynak ve test edilmiş.</strong> Her satırı GitHub'da okuyabilirsin; testler senin klasörün üzerinde değil, sahte bir ana klasörde çalışır.",
+    "Privacy": "Gizlilik",
+    "Nothing leaves your Mac.": "Hiçbir şey Mac'inden çıkmaz.",
+    "FreeMyMacOS makes no network requests at all. Your files, sizes and app list stay on your computer.": "FreeMyMacOS hiçbir ağ isteği yapmaz. Dosyaların, boyutlar ve uygulama listen bilgisayarında kalır.",
+    "Accounts": "Hesap",
+    "Telemetry": "Telemetri",
+    "Analytics": "Analitik",
+    "License keys": "Lisans anahtarı",
+    "Upsells": "Ücretli sürüm",
+    "Auto-update pings": "Güncelleme sorguları",
+    "Install": "Kurulum",
+    "Ready in a minute.": "Bir dakikada hazır.",
+    "<strong>Download the disk image</strong>FreeMyMacOS.dmg, about 2 MB.": "<strong>Disk görüntüsünü indir</strong>FreeMyMacOS.dmg, yaklaşık 2 MB.",
+    "<strong>Drag it into Applications</strong>Open the disk image and drop the app on the folder.": "<strong>Uygulamalar klasörüne sürükle</strong>Disk görüntüsünü aç ve uygulamayı klasörün üzerine bırak.",
+    "<strong>Open it and scan</strong>Signed with a Developer ID and notarized by Apple, so it opens without Gatekeeper warnings.": "<strong>Aç ve tara</strong>Developer ID ile imzalı ve Apple tarafından onaylanmış (notarize), bu yüzden Gatekeeper uyarısı olmadan açılır.",
+    "Version 1.0 SHA-256:<br><code>873da273ebcbc8b0079b1d9484ab6f89c8466b34137b674dc8c32eaf3b2ba19a</code>": "Sürüm 1.0 SHA-256:<br><code>873da273ebcbc8b0079b1d9484ab6f89c8466b34137b674dc8c32eaf3b2ba19a</code>",
+    "Questions": "Sorular",
+    "Is it really free?": "Gerçekten ücretsiz mi?",
+    "Yes. No trial, no subscription, no paid tier. The code is MIT licensed on GitHub.": "Evet. Deneme süresi, abonelik ya da ücretli sürüm yok. Kod, GitHub'da MIT lisansıyla yayında.",
+    "Are deleted caches gone for good?": "Silinen önbellekler kalıcı olarak mı gidiyor?",
+    "Yes, they are removed, not moved to the Trash, because moving them would not free any space. Caches are rebuilt by the apps that use them, which is why only cache folders are on the list. Rows such as Xcode Archives and Trash are marked careful and ask first.": "Evet, Çöp Sepeti'ne taşınmaz, doğrudan silinir; taşımak yer açmazdı. Önbellekleri onları kullanan uygulamalar yeniden oluşturur, listede yalnızca önbellek klasörlerinin olmasının sebebi de bu. Xcode Archives ve Trash gibi satırlar \"dikkat\" olarak işaretlidir ve önce sorar.",
+    "Why does Free RAM ask for my password?": "Free RAM neden şifremi istiyor?",
+    "It runs macOS's own <code>purge</code> command, which needs administrator rights. The password goes to the standard macOS prompt; the app never sees it.": "macOS'in kendi <code>purge</code> komutunu çalıştırır ve bu komut yönetici yetkisi ister. Şifreni macOS'in standart penceresine girersin; uygulama onu hiç görmez.",
+    "Why do some rows say \"Grant access\"?": "Bazı satırlarda neden \"Grant access\" yazıyor?",
+    "Trash and the Safari cache are protected by macOS. Giving the app Full Disk Access unlocks just those two rows; everything else works without it, and the app never asks on its own.": "Çöp Sepeti ve Safari önbelleği macOS tarafından korunur. Uygulamaya Tam Disk Erişimi verirsen yalnızca bu iki satır açılır; geri kalan her şey o izin olmadan çalışır ve uygulama bu izni kendiliğinden istemez.",
+    "Does it run in the background?": "Arka planda çalışıyor mu?",
+    "No. There is no menu bar icon, login item or helper. It only does something while its window is open and you press a button.": "Hayır. Menü çubuğu simgesi, açılışta başlayan öğe ya da yardımcı servis yok. Yalnızca penceresi açıkken ve sen bir butona bastığında bir şey yapar.",
+    "Which Macs does it support?": "Hangi Mac'leri destekliyor?",
+    "Any Mac running macOS 14 Sonoma or later, Apple silicon or Intel.": "macOS 14 Sonoma veya üzerini çalıştıran her Mac, Apple silicon ya da Intel.",
+    "Free up your Mac.": "Mac'ine yer aç.",
+    "It takes a minute to install and a few seconds to scan.": "Kurulumu bir dakika, taraması birkaç saniye sürer.",
+    "© 2026 FreeMyMacOS · MIT License": "© 2026 FreeMyMacOS · MIT Lisansı",
+    "Source code": "Kaynak kod",
+    "All releases": "Tüm sürümler",
+    "Report a problem": "Sorun bildir"
+  };
+  var META = {
+    en: { title: document.title, desc: document.querySelector('meta[name="description"]').content },
+    tr: { title: "FreeMyMacOS — ücretsiz Mac önbellek temizleyici",
+          desc: "Gönül rahatlığıyla silebileceğin geliştirici ve uygulama önbelleklerini temizleyen, belleğini neyin kullandığını gösteren ücretsiz, açık kaynak macOS uygulaması. Hesap yok, internet yok, takip yok." }
+  };
+  var ALT = {
+    ".shot img": "FreeMyMacOS penceresi: temizlenebilecek 24,06 GB'ı gösteren halka, Temizle butonu ve boyutlarıyla önbellek klasörleri listesi",
+    ".install img": "FreeMyMacOS disk görüntüsü penceresi: uygulamadan Uygulamalar klasörüne giden ok"
+  };
+  var SEL = "h1,h2,h3,.lede,.section-lede,.eyebrow,.caption,.meta span,.secondary-link,.nav-links a,.btn span,.card p,.t-path,.legend > div,.t > .tag,.checks li div,.pill s,.steps li div,.verify,summary,details p,footer .wrap > div,footer nav a";
+  var norm = function (h) { return h.replace(/\s+/g, " ").trim(); };
+  var els = [].slice.call(document.querySelectorAll(SEL));
+  els.forEach(function (el) { el.setAttribute("data-en", norm(el.innerHTML)); });
+  [].forEach.call(document.querySelectorAll(".shot img, .install img"), function (img) { img.setAttribute("data-en-alt", img.alt); });
+
+  function apply(lang) {
+    document.documentElement.lang = lang;
+    els.forEach(function (el) {
+      var en = el.getAttribute("data-en");
+      el.innerHTML = lang === "tr" && TR[en] !== undefined ? TR[en] : en;
+    });
+    Object.keys(ALT).forEach(function (s) {
+      var img = document.querySelector(s);
+      if (img) img.alt = lang === "tr" ? ALT[s] : img.getAttribute("data-en-alt");
+    });
+    document.title = META[lang].title;
+    document.querySelector('meta[name="description"]').content = META[lang].desc;
+    [].forEach.call(document.querySelectorAll(".lang button"), function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === lang));
+    });
+  }
+  function save(lang) { try { localStorage.setItem("lang", lang); } catch (e) {} }
+  function initial() {
+    var q = new URLSearchParams(location.search).get("lang");
+    if (q === "tr" || q === "en") return q;
+    try { var s = localStorage.getItem("lang"); if (s === "tr" || s === "en") return s; } catch (e) {}
+    return (navigator.language || "").toLowerCase().indexOf("tr") === 0 ? "tr" : "en";
+  }
+  [].forEach.call(document.querySelectorAll(".lang button"), function (b) {
+    b.addEventListener("click", function () { var l = b.getAttribute("data-lang"); save(l); apply(l); });
+  });
+  apply(initial());
+})();
+</script>
+</body>
+</html>
