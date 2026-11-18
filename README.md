@@ -15,6 +15,12 @@ That is all it does. There is no background scanning, no menu bar agent and no h
 
 Requires macOS 14 or later, on Apple silicon or Intel.
 
+## Install
+
+Download `FreeMyMacOS.dmg` from the [latest release](https://github.com/biggypanda/FreeMyMacOS/releases/latest), open it and drag FreeMyMacOS into Applications. The app is signed with a Developer ID and notarized by Apple, so it opens without Gatekeeper warnings.
+
+![The FreeMyMacOS disk image window: drag the app onto the Applications folder](docs/design/dmg-window.png)
+
 ## Exactly what it cleans
 
 Paths are relative to your home folder (`~`). For each one, the folder itself is kept and only what is inside it is deleted.
