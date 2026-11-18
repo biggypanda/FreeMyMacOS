@@ -6,6 +6,7 @@ import SwiftUI
 struct RootView: View {
     @Bindable var model: AppModel
     let memory: MemoryActions
+    let commands: CommandActions
     /// Which row is open. Lives here, not in `AppModel`: it is pure presentation.
     @State var expandedID: String?
     @State private var isConfirmingClean = false
@@ -13,9 +14,11 @@ struct RootView: View {
 
     private let diskTotal = DiskSpace.current(for: FileManager.default.homeDirectoryForCurrentUser)?.total
 
-    init(model: AppModel, memory: MemoryActions, initialExpandedID: String? = nil) {
+    init(model: AppModel, memory: MemoryActions, commands: CommandActions = CommandActions(),
+         initialExpandedID: String? = nil) {
         self.model = model
         self.memory = memory
+        self.commands = commands
         _expandedID = State(initialValue: initialExpandedID)
     }
 
@@ -42,6 +45,10 @@ struct RootView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(confirmationMessage)
+        }
+        .onChange(of: commands.cleanRequests) {
+            guard model.phase == .ready, model.selectedBytes > 0 else { return }
+            requestClean()
         }
         .task(id: model.phase) {
             // Hold "Freed …" for a moment, then go back to the list.

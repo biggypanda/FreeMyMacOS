@@ -14,6 +14,7 @@ struct FreeMyMacOSApp: App {
             RootView(
                 model: model,
                 memory: Self.memoryActions,
+                commands: commandActions,
                 initialExpandedID: Self.isMock ? MockData.Hooks.expandedID : nil
             )
                 // The hidden title bar still counts toward the window height, so the content is
@@ -24,7 +25,11 @@ struct FreeMyMacOSApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
+        .commands { AppCommands(model: model, actions: commandActions) }
     }
+
+    /// Clean asks the window (it may need to confirm first), so menu and button agree.
+    private let commandActions = CommandActions()
 
     // MARK: - Composition
 
@@ -53,7 +58,10 @@ struct FreeMyMacOSApp: App {
     private static func makeModel() -> AppModel {
         let targets = TargetCatalog.all(home: home, ownBundleID: Brand.bundleID)
         if isMock {
-            return AppModel(targets: targets, scanner: MockScanner(), cleaner: MockCleaner())
+            return AppModel(
+                targets: targets, scanner: MockScanner(), cleaner: MockCleaner(),
+                store: MockData.preferences()
+            )
         }
         // Each root is checked on its own: one that resolves outside the home folder (say, a
         // symlinked cache folder) is left out of the guard, so its items fail closed in Cleaner
@@ -68,8 +76,9 @@ struct FreeMyMacOSApp: App {
         return AppModel(
             targets: targets,
             scanner: DiskScanner(home: home),
-            cleaner: Cleaner(guard: safetyGuard, dryRun: isDryRun),
-            isDryRun: isDryRun
+            cleaner: Cleaner(guard: safetyGuard, dryRun: isDryRun, runningBundleIDs: RunningApps.bundleIDs),
+            isDryRun: isDryRun,
+            store: UserDefaultsPreferenceStore()
         )
     }
 
@@ -93,8 +102,25 @@ private struct NothingCleaner: Cleaning {
     }
 }
 
+/// Bundle ids of the running apps, read on the main thread where NSWorkspace lives.
+enum RunningApps {
+    static let bundleIDs: @Sendable () -> Set<String> = {
+        if Thread.isMainThread {
+            return MainActor.assumeIsolated { current() }
+        }
+        return DispatchQueue.main.sync { MainActor.assumeIsolated { current() } }
+    }
+
+    @MainActor
+    private static func current() -> Set<String> {
+        Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
+    }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Always dark, also in Light Mode: alerts, popovers and the About panel included.
+        NSApp.appearance = NSAppearance(named: .darkAqua)
         NSApp.activate()
     }
 

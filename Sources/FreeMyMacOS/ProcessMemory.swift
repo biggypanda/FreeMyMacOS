@@ -66,7 +66,7 @@ struct MemoryActions {
     let topApps: @MainActor () -> [AppMemory]
     let quit: @MainActor (AppMemory) -> Void
     /// Returns true only if memory was actually purged.
-    let freeRAM: @MainActor () async -> Bool
+    let freeRAM: @MainActor () async -> PurgeResult
 
     static let popoverLimit = 5
 

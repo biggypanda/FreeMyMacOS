@@ -11,6 +11,8 @@ enum MockData {
         let items: [(String, Int64)]
         /// When this target's result arrives during a scan.
         let delay: Double
+        /// Roots (relative to home) shown as needing Full Disk Access.
+        var deniedRoots: [String] = []
     }
 
     private static let gb: Int64 = 1_000_000_000
@@ -59,7 +61,30 @@ enum MockData {
             bytes: 917 * mb, itemCount: 3, status: .ok,
             items: [("~/Library/Caches/Google/Chrome", 603 * mb), ("~/Library/Caches/Firefox", 198 * mb),
                     ("~/Library/Caches/company.thebrowser.Browser", 116 * mb)],
-            delay: 0.6),
+            delay: 0.6, deniedRoots: ["Library/Caches/com.apple.Safari"]),
+        "cargo.registry": Entry(
+            bytes: 1_204 * mb, itemCount: 2, status: .ok,
+            items: [("~/.cargo/registry/src", 803 * mb), ("~/.cargo/registry/cache", 401 * mb)],
+            delay: 0.55),
+        "playwright.browsers": Entry(
+            bytes: 1_890 * mb, itemCount: 4, status: .ok,
+            items: [("chromium-1148", 612 * mb), ("firefox-1466", 498 * mb), ("webkit-2104", 471 * mb),
+                    ("chromium_headless_shell-1148", 309 * mb)],
+            delay: 0.65),
+        "editor.caches": Entry(
+            bytes: 1_116 * mb, itemCount: 6, status: .ok,
+            items: [("~/Library/Application Support/Code/CachedExtensionVSIXs", 512 * mb),
+                    ("~/Library/Application Support/Code/Cache", 288 * mb),
+                    ("~/Library/Application Support/Cursor/CachedData", 201 * mb),
+                    ("~/Library/Application Support/Code/GPUCache", 82 * mb),
+                    ("~/Library/Application Support/Cursor/Code Cache", 33 * mb)],
+            delay: 0.75),
+        "chat.caches": Entry(
+            bytes: 734 * mb, itemCount: 3, status: .ok,
+            items: [("~/Library/Application Support/Slack/Cache", 402 * mb),
+                    ("~/Library/Application Support/Slack/Service Worker/CacheStorage", 219 * mb),
+                    ("~/Library/Application Support/discord/Cache", 113 * mb)],
+            delay: 0.85),
         "user.caches": Entry(
             bytes: 2_611 * mb, itemCount: 36, status: .ok,
             items: [("com.example.MusicPlayer", 904 * mb), ("com.example.DesignTool", 611 * mb),
@@ -89,8 +114,25 @@ enum MockData {
             }
         },
         quit: { _ in },
-        freeRAM: { false }
+        freeRAM: {
+            try? await Task.sleep(for: .milliseconds(600))
+            return .freed
+        }
     )
+
+    /// Two earlier cleans, so the "Last cleaned" line and its history show in mock mode.
+    @MainActor
+    static func preferences() -> InMemoryPreferenceStore {
+        let day: TimeInterval = 86_400
+        return InMemoryPreferenceStore(history: [
+            CleanRecord(date: Date(timeIntervalSinceNow: -9 * day), freedBytes: 14_210 * mb,
+                        targetIDs: ["xcode.derivedData", "node.cache", "user.caches"],
+                        failureCount: 0, isDryRun: false),
+            CleanRecord(date: Date(timeIntervalSinceNow: -2 * day), freedBytes: 6_402 * mb,
+                        targetIDs: ["xcode.derivedData", "homebrew.cache", "browser.caches"],
+                        failureCount: 3, isDryRun: false),
+        ])
+    }
 
     /// Opt-in debug hooks, honored only in mock mode.
     enum Hooks {
@@ -118,9 +160,11 @@ struct MockScanner: Scanning {
         let items = entry.items.map { name, bytes in
             ScanItem(url: root.appendingPathComponent(name), bytes: bytes, name: name)
         }
+        let home = FileManager.default.homeDirectoryForCurrentUser
         return ScanResult(
             targetID: target.id, bytes: entry.bytes, itemCount: entry.itemCount,
-            status: entry.status, topItems: items
+            status: entry.status, topItems: items,
+            deniedRoots: entry.deniedRoots.map { home.appendingPathComponent($0, isDirectory: true) }
         )
     }
 }

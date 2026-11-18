@@ -14,6 +14,7 @@ struct HeroPanel: View {
     @State private var cleanStart = ByteParts(bytes: 0)
     @State private var cleanStartFraction: Double = 0
     @State private var isShowingFailures = false
+    @State private var isShowingHistory = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,7 +38,8 @@ struct HeroPanel: View {
                 .padding(.top, Theme.heroSecondaryTopSpacing)
                 // Hangs below Rescan without moving the ring and buttons.
                 .overlay(alignment: .bottom) {
-                    failuresLink
+                    belowRescan
+                        .fixedSize()
                         .alignmentGuide(.bottom) { $0[.top] - Theme.space4 }
                 }
         }
@@ -46,6 +48,28 @@ struct HeroPanel: View {
         .animation(Theme.motion(reduced: reduceMotion), value: model.phase)
         .animation(reduceMotion ? nil : Theme.spring, value: liveBytes)
         .task(id: model.phase) { await flowToZeroIfCleaning() }
+    }
+
+    // MARK: - Below Rescan
+
+    /// The failures of the last clean when there are any; otherwise when it last cleaned.
+    @ViewBuilder
+    private var belowRescan: some View {
+        if !model.failures.isEmpty && model.phase != .cleaning {
+            failuresLink
+        } else if let last = model.lastClean, model.phase == .ready || model.phase == .idle {
+            Button(lastCleanText(last)) { isShowingHistory = true }
+                .buttonStyle(GhostButtonStyle(font: Theme.caption, idleColor: Theme.textTertiary))
+                .popover(isPresented: $isShowingHistory, arrowEdge: .bottom) {
+                    CleanHistoryPopover(history: model.history, targets: model.targets)
+                }
+                .transition(.opacity)
+        }
+    }
+
+    private func lastCleanText(_ record: CleanRecord) -> String {
+        let when = record.date.formatted(.relative(presentation: .named))
+        return "Last cleaned \(when) · \(ByteFormat.string(record.freedBytes))"
     }
 
     // MARK: - Failures
@@ -199,9 +223,11 @@ struct HeroPanel: View {
     }
 }
 
-/// Every path the last clean could not remove, with the reason.
+/// The paths the last clean could not remove, with the reason. A clean can leave thousands
+/// behind, so the list is lazy and shows the first `shownLimit` only.
 private struct CleanFailuresPopover: View {
     let failures: [CleanFailure]
+    static let shownLimit = 500
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -212,8 +238,8 @@ private struct CleanFailuresPopover: View {
                 .foregroundStyle(Theme.textSecondary)
                 .padding(.bottom, Theme.space8)
             ScrollView {
-                VStack(alignment: .leading, spacing: Theme.space8) {
-                    ForEach(Array(failures.enumerated()), id: \.offset) { _, failure in
+                LazyVStack(alignment: .leading, spacing: Theme.space8) {
+                    ForEach(Array(failures.prefix(Self.shownLimit).enumerated()), id: \.offset) { _, failure in
                         VStack(alignment: .leading, spacing: Theme.space4 / 2) {
                             Text((failure.path as NSString).abbreviatingWithTildeInPath)
                                 .font(Theme.detailItemName)
@@ -226,15 +252,81 @@ private struct CleanFailuresPopover: View {
                                 .foregroundStyle(Theme.textSecondary)
                         }
                     }
+                    if failures.count > Self.shownLimit {
+                        Text("and \(failures.count - Self.shownLimit) more")
+                            .font(Theme.caption)
+                            .foregroundStyle(Theme.textTertiary)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxHeight: Theme.failuresMaxHeight)
-            .fixedSize(horizontal: false, vertical: true)
+            .frame(height: min(Theme.failuresMaxHeight, CGFloat(min(failures.count, 8)) * Theme.failureRowEstimate))
         }
         .padding(Theme.popoverPadding)
         .frame(width: Theme.popoverWidth)
         .presentationCornerRadius(Theme.popoverCornerRadius)
+    }
+}
+
+/// Past cleans, newest first.
+private struct CleanHistoryPopover: View {
+    let history: [CleanRecord]
+    let targets: [CleanTarget]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Recent cleans")
+                .font(Theme.groupHeader)
+                .tracking(Theme.groupHeaderTracking)
+                .textCase(.uppercase)
+                .foregroundStyle(Theme.textSecondary)
+                .padding(.bottom, Theme.space8)
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: Theme.space8) {
+                    ForEach(Array(history.reversed().enumerated()), id: \.offset) { _, record in
+                        VStack(alignment: .leading, spacing: Theme.space4 / 2) {
+                            HStack {
+                                Text(record.date.formatted(date: .abbreviated, time: .shortened))
+                                    .font(Theme.detailItemName)
+                                    .foregroundStyle(Theme.textPrimary)
+                                Spacer(minLength: Theme.space8)
+                                Text(freedText(record))
+                                    .font(Theme.detailItemSize)
+                                    .monospacedDigit()
+                                    .foregroundStyle(Theme.textSecondary)
+                            }
+                            Text(summary(record))
+                                .font(Theme.caption)
+                                .foregroundStyle(Theme.textTertiary)
+                                .lineLimit(2)
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(height: min(Theme.failuresMaxHeight, CGFloat(min(history.count, 6)) * Theme.historyRowEstimate))
+        }
+        .padding(Theme.popoverPadding)
+        .frame(width: Theme.popoverWidth)
+        .presentationCornerRadius(Theme.popoverCornerRadius)
+    }
+
+    private func freedText(_ record: CleanRecord) -> String {
+        record.isDryRun
+            ? "Would free \(ByteFormat.string(record.freedBytes))"
+            : ByteFormat.string(record.freedBytes)
+    }
+
+    private func summary(_ record: CleanRecord) -> String {
+        let titles = record.targetIDs.compactMap { id in targets.first { $0.id == id }?.title }
+        var text = titles.formatted(.list(type: .and))
+        if record.failureCount > 0 {
+            text += record.failureCount == 1
+                ? " · 1 item couldn't be removed"
+                : " · \(record.failureCount) items couldn't be removed"
+        }
+        return text
     }
 }
 
@@ -392,13 +484,15 @@ struct PrimaryButtonStyle: ButtonStyle {
 
 /// Quiet text button: secondary text, a faint surface on hover.
 struct GhostButtonStyle: ButtonStyle {
+    var font: Font = Theme.body
+    var idleColor: Color = Theme.textSecondary
     @Environment(\.isEnabled) private var isEnabled
     @State private var isHovered = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(Theme.body)
-            .foregroundStyle(isHovered && isEnabled ? Theme.textPrimary : Theme.textSecondary)
+            .font(font)
+            .foregroundStyle(isHovered && isEnabled ? Theme.textPrimary : idleColor)
             .padding(.horizontal, Theme.space12)
             .padding(.vertical, Theme.space6)
             .background(

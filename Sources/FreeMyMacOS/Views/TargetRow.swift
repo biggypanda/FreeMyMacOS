@@ -3,6 +3,7 @@ import FreeMyMacOSCore
 import SwiftUI
 
 /// One target. Clicking the row opens its detail; only the round mark changes the selection.
+/// With the keyboard: Tab focuses a row, Space selects it, → opens and ← closes its detail.
 struct TargetRow: View {
     let target: CleanTarget
     let result: ScanResult?
@@ -13,6 +14,7 @@ struct TargetRow: View {
     let onToggleSelected: () -> Void
 
     @State private var isHovered = false
+    @FocusState private var isFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     static let privacySettingsURL = URL(
@@ -20,6 +22,8 @@ struct TargetRow: View {
     )!
 
     private var isDenied: Bool { result?.status == .permissionDenied }
+    /// Readable, but some of its folders need Full Disk Access.
+    private var isPartlyDenied: Bool { result?.status == .ok && result?.deniedRoots.isEmpty == false }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -31,6 +35,11 @@ struct TargetRow: View {
         }
         .background(background, in: .rect(cornerRadius: Theme.rowCornerRadius))
         .clipShape(.rect(cornerRadius: Theme.rowCornerRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.rowCornerRadius)
+                .strokeBorder(Theme.focusRing, lineWidth: Theme.focusRingWidth)
+                .opacity(isFocused ? 1 : 0)
+        }
         .animation(Theme.spring, value: isHovered)
     }
 
@@ -60,6 +69,14 @@ struct TargetRow: View {
 
             Spacer(minLength: Theme.space8)
 
+            if isPartlyDenied {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(Theme.caption)
+                    .foregroundStyle(Theme.warning)
+                    .help("Some of these folders need Full Disk Access")
+                    .accessibilityLabel("Some folders need Full Disk Access")
+            }
+
             if target.tier == .careful && !isDenied {
                 Text("Review first")
                     .font(Theme.marker)
@@ -68,17 +85,36 @@ struct TargetRow: View {
 
             trailingValue
 
-            SelectionMark(isSelected: isSelected && !isDenied, isEnabled: canToggle, isLocked: isDenied)
-                .onTapGesture { if canToggle { onToggleSelected() } }
-                .accessibilityLabel("Select \(target.title)")
-                .accessibilityAddTraits(isSelected && !isDenied ? [.isButton, .isSelected] : .isButton)
-                .accessibilityAction { if canToggle { onToggleSelected() } }
+            Button { if canToggle { onToggleSelected() } } label: {
+                SelectionMark(isSelected: isSelected && !isDenied, isEnabled: canToggle, isLocked: isDenied)
+            }
+            .buttonStyle(.plain)
+            // The row itself takes keyboard focus (Space selects), so the mark is not a second stop.
+            .focusable(false)
+            .disabled(!canToggle)
+            .accessibilityLabel("Select \(target.title)")
+            .accessibilityAddTraits(isSelected && !isDenied ? .isSelected : [])
         }
         .padding(.horizontal, Theme.rowHorizontalPadding)
         .frame(height: Theme.rowHeight)
         .contentShape(.rect)
         .onTapGesture(perform: onToggleExpanded)
         .onHover { isHovered = $0 }
+        .focusable()
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .onKeyPress(.space) {
+            if canToggle { onToggleSelected() }
+            return .handled
+        }
+        .onKeyPress(.rightArrow) {
+            if !isExpanded { onToggleExpanded() }
+            return .handled
+        }
+        .onKeyPress(.leftArrow) {
+            if isExpanded { onToggleExpanded() }
+            return .handled
+        }
         .accessibilityAction(named: isExpanded ? "Hide details" : "Show details", onToggleExpanded)
     }
 
@@ -132,6 +168,21 @@ private struct TargetDetail: View {
                 .padding(.top, Theme.space6)
                 .padding(.trailing, trailingInset)
             } else {
+                if let denied = result?.deniedRoots, !denied.isEmpty {
+                    HStack(alignment: .firstTextBaseline, spacing: Theme.space6) {
+                        Text(partialAccessText(denied))
+                            .font(Theme.detail)
+                            .foregroundStyle(Theme.textSecondary)
+                            .lineSpacing(Theme.detailLineSpacing)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: Theme.space8)
+                        TextLink(title: "Open Privacy settings", color: Theme.warning) {
+                            NSWorkspace.shared.open(TargetRow.privacySettingsURL)
+                        }
+                    }
+                    .padding(.trailing, trailingInset)
+                    .padding(.bottom, Theme.space8)
+                }
                 if let result {
                     ForEach(result.topItems) { item in
                         HStack(spacing: Theme.space12) {
@@ -168,6 +219,15 @@ private struct TargetDetail: View {
         .padding(.leading, Theme.detailIndent)
         .padding(.bottom, Theme.space12)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func partialAccessText(_ denied: [URL]) -> String {
+        let names = denied
+            .map { ($0.path as NSString).abbreviatingWithTildeInPath }
+            .formatted(.list(type: .and))
+        return denied.count == 1
+            ? "\(names) needs Full Disk Access, so it is not counted."
+            : "\(names) need Full Disk Access, so they are not counted."
     }
 
     private var remainingCount: Int? {

@@ -10,6 +10,8 @@ struct MemoryStrip: View {
     @State private var apps: [AppMemory] = []
     @State private var isShowingApps = false
     @State private var isPurging = false
+    /// Short note next to Free RAM after it ran, cleared after a few seconds.
+    @State private var purgeNote: PurgeResult?
     /// The numbers refresh only while the window can be seen.
     @State private var isWindowVisible = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -35,10 +37,19 @@ struct MemoryStrip: View {
                 MemoryAppsPopover(apps: apps, onQuit: quit)
             }
 
-            // Runs `purge` behind the system's administrator prompt.
-            Button("Free RAM") { freeRAM() }
+            // Runs `purge` behind the system's administrator prompt. For a few seconds after,
+            // the button says how it went.
+            Button(purgeButtonTitle) { freeRAM() }
                 .buttonStyle(SecondaryButtonStyle())
                 .disabled(isPurging)
+                .help("Asks for your administrator password, then runs purge")
+                .accessibilityHint("Asks for your administrator password")
+        }
+        .animation(Theme.motion(reduced: reduceMotion), value: purgeNote)
+        .task(id: purgeNote) {
+            guard purgeNote != nil else { return }
+            guard (try? await Task.sleep(for: Theme.purgeNoteDuration)) != nil else { return }
+            purgeNote = nil
         }
         .font(Theme.caption)
         .foregroundStyle(Theme.textSecondary)
@@ -79,10 +90,25 @@ struct MemoryStrip: View {
     private func freeRAM() {
         guard !isPurging else { return }
         isPurging = true
+        purgeNote = nil
         Task {
-            // A cancelled prompt or an error returns false: then nothing changes.
-            if await actions.freeRAM() { refresh() }
+            let result = await actions.freeRAM()
+            if result == .freed { refresh() }
+            purgeNote = result
             isPurging = false
+        }
+    }
+
+    private var purgeButtonTitle: String {
+        if isPurging { return "Freeing…" }
+        return purgeNote.map(noteText) ?? "Free RAM"
+    }
+
+    private func noteText(_ result: PurgeResult) -> String {
+        switch result {
+        case .freed: "Memory freed"
+        case .cancelled: "Cancelled"
+        case .failed: "Couldn't free memory"
         }
     }
 

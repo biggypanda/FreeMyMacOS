@@ -16,7 +16,8 @@ enum Theme {
 
     static let textPrimary = Color.white.opacity(0.92)
     static let textSecondary = Color.white.opacity(0.55)
-    static let textTertiary = Color.white.opacity(0.32)
+    /// About 4.6:1 on the background, enough for small text.
+    static let textTertiary = Color.white.opacity(0.48)
 
     /// The only accent. Used as a gradient on the ring and the primary button, nowhere else
     /// (plus the faint background glow).
@@ -44,6 +45,14 @@ enum Theme {
 
     /// Careful-tier marker and permission state only.
     static let warning = Color(hex: 0xFFB454)
+    /// Keyboard focus around a row.
+    static let focusRing = Color.white.opacity(0.55)
+    static let focusRingWidth: CGFloat = 1.5
+    /// How long the note after Free RAM stays.
+    static let purgeNoteDuration: Duration = .seconds(3)
+    /// Height estimates that size the failures and history popovers to their content.
+    static let failureRowEstimate: CGFloat = 40
+    static let historyRowEstimate: CGFloat = 44
 
     /// Glow behind the hero: starts top-left of the window center, opacity ≤ 0.10.
     static let glowOpacity = 0.10
